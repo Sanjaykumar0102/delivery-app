@@ -1475,17 +1475,17 @@ const DriverDashboard = () => {
                           {[1, 2, 3, 4, 5].map((star) => (
                             <span
                               key={star}
-                              className={star <= order.customerRating ? "star-filled" : "star-empty"}
+                              className={star <= (order.customerRating?.rating || 0) ? "star-filled" : "star-empty"}
                             >
                               ★
                             </span>
                           ))}
-                          <span className="rating-value">({order.customerRating}/5)</span>
+                          <span className="rating-value">({order.customerRating?.rating || 0}/5)</span>
                         </div>
-                        {order.customerReview && (
+                        {order.customerRating?.review && (
                           <div className="customer-feedback">
                             <p className="feedback-label">💬 Feedback:</p>
-                            <p className="feedback-text">"{order.customerReview}"</p>
+                            <p className="feedback-text">"{order.customerRating.review}"</p>
                           </div>
                         )}
                       </div>
@@ -1553,21 +1553,18 @@ const DriverDashboard = () => {
             </div>
 
             <div className="earnings-chart">
-              <h3>📈 Earnings Chart</h3>
+              <h3>📈 Earnings Overview</h3>
               <EarningsChart 
                 earningsData={{
-                  labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                  labels: ['Today', 'This Week', 'This Month', 'Total'],
                   daily: [
-                    user?.earnings?.dailyEarnings?.[0] || 0,
-                    user?.earnings?.dailyEarnings?.[1] || 0,
-                    user?.earnings?.dailyEarnings?.[2] || 0,
-                    user?.earnings?.dailyEarnings?.[3] || 0,
-                    user?.earnings?.dailyEarnings?.[4] || 0,
-                    user?.earnings?.dailyEarnings?.[5] || 0,
-                    user?.earnings?.dailyEarnings?.[6] || 0,
+                    earnings?.today || 0,
+                    earnings?.thisWeek || 0,
+                    earnings?.thisMonth || 0,
+                    earnings?.total || 0,
                   ]
                 }}
-                chartType="line"
+                chartType="bar"
               />
             </div>
           </div>

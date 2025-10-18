@@ -174,24 +174,41 @@ const getProfile = asyncHandler(async (req, res) => {
     let monthEarnings = 0;
     let totalEarnings = 0;
     
+    console.log('📊 Earnings Calculation Debug:');
+    console.log('   Total delivered orders:', deliveredOrders.length);
+    console.log('   Start of today:', startOfToday);
+    console.log('   Start of week:', startOfWeek);
+    console.log('   Start of month:', startOfMonth);
+    
     deliveredOrders.forEach(order => {
       const orderDate = new Date(order.deliveredAt || order.updatedAt);
       const earning = order.driverEarnings || 0;
+      
+      console.log(`   Order ${order._id}: Delivered at ${orderDate}, Earning: ₹${earning}`);
       
       totalEarnings += earning;
       
       if (orderDate >= startOfToday) {
         todayEarnings += earning;
+        console.log(`      ✅ Counted in TODAY`);
       }
       
       if (orderDate >= startOfWeek) {
         weekEarnings += earning;
+        console.log(`      ✅ Counted in THIS WEEK`);
       }
       
       if (orderDate >= startOfMonth) {
         monthEarnings += earning;
+        console.log(`      ✅ Counted in THIS MONTH`);
       }
     });
+    
+    console.log('💰 Final Earnings:');
+    console.log(`   Today: ₹${todayEarnings}`);
+    console.log(`   This Week: ₹${weekEarnings}`);
+    console.log(`   This Month: ₹${monthEarnings}`);
+    console.log(`   Total: ₹${totalEarnings}`);
     
     // Update user earnings
     user.earnings = {
