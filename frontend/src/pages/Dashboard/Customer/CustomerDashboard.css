@@ -1622,9 +1622,18 @@
 }
 
 .star-button.selected .star-svg,
+.star-button.filled .star-svg,
 .star-button:active .star-svg {
   color: #fbbf24;
   filter: drop-shadow(0 4px 12px rgba(251, 191, 36, 0.6));
+}
+
+.star-button.filled {
+  transform: scale(1.1);
+}
+
+.star-button.filled:hover {
+  transform: scale(1.3) rotate(15deg);
 }
 
 .rating-hint {

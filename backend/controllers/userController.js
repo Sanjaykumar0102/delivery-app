@@ -149,6 +149,62 @@ const getProfile = asyncHandler(async (req, res) => {
     throw new Error('User not found');
   }
   
+  // If user is a driver, calculate earnings dynamically from orders
+  if (user.role === 'Driver') {
+    const Order = require('../models/order');
+    
+    // Get current date boundaries
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay()); // Start of week (Sunday)
+    startOfWeek.setHours(0, 0, 0, 0);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+    
+    // Fetch all delivered orders for this driver
+    const deliveredOrders = await Order.find({
+      driver: user._id,
+      status: 'Delivered',
+      driverEarnings: { $exists: true, $ne: null }
+    });
+    
+    // Calculate earnings
+    let todayEarnings = 0;
+    let weekEarnings = 0;
+    let monthEarnings = 0;
+    let totalEarnings = 0;
+    
+    deliveredOrders.forEach(order => {
+      const orderDate = new Date(order.deliveredAt || order.updatedAt);
+      const earning = order.driverEarnings || 0;
+      
+      totalEarnings += earning;
+      
+      if (orderDate >= startOfToday) {
+        todayEarnings += earning;
+      }
+      
+      if (orderDate >= startOfWeek) {
+        weekEarnings += earning;
+      }
+      
+      if (orderDate >= startOfMonth) {
+        monthEarnings += earning;
+      }
+    });
+    
+    // Update user earnings
+    user.earnings = {
+      today: todayEarnings,
+      thisWeek: weekEarnings,
+      thisMonth: monthEarnings,
+      total: totalEarnings
+    };
+    
+    // Save updated earnings to database
+    await user.save();
+  }
+  
   res.json(user);
 });
 

@@ -38,6 +38,10 @@ const CustomerDashboard = () => {
   const [searchingForDriver, setSearchingForDriver] = useState(false);
   const [pendingOrderId, setPendingOrderId] = useState(null);
   const [hasActiveOrder, setHasActiveOrder] = useState(false);
+  
+  // Rating state
+  const [selectedRating, setSelectedRating] = useState(0);
+  const [hoveredRating, setHoveredRating] = useState(0);
 
   // Vehicle types with pricing
   const vehicleTypes = [
@@ -377,15 +381,13 @@ const CustomerDashboard = () => {
     return icons[status] || "📦";
   };
 
-  const handleRateDriver = async (orderId, rating, review = "") => {
-    // If rating is null, get it from the clicked star
-    if (rating === null) {
-      const activeStars = document.querySelectorAll('.star-btn.active');
-      if (activeStars.length === 0) {
-        alert("Please select a rating first");
-        return;
-      }
-      rating = activeStars.length;
+  const handleRateDriver = async (orderId, rating = null, review = "") => {
+    // Use selectedRating if rating is not provided
+    const finalRating = rating || selectedRating;
+    
+    if (!finalRating || finalRating === 0) {
+      alert("Please select a rating first");
+      return;
     }
 
     try {
@@ -396,7 +398,7 @@ const CustomerDashboard = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${Cookies.get('token')}`
         },
-        body: JSON.stringify({ rating, review })
+        body: JSON.stringify({ rating: finalRating, review })
       });
 
       if (!response.ok) {
@@ -406,7 +408,13 @@ const CustomerDashboard = () => {
 
       const data = await response.json();
       alert("✅ Rating submitted successfully!");
-      fetchOrders(); // Refresh orders to update the UI
+      
+      // Reset rating state
+      setSelectedRating(0);
+      setHoveredRating(0);
+      
+      // Refresh orders to update the UI
+      fetchOrders();
     } catch (error) {
       console.error("Error rating driver:", error);
       alert("❌ " + (error.message || "Failed to submit rating"));
@@ -1074,8 +1082,10 @@ const CustomerDashboard = () => {
                               {[1, 2, 3, 4, 5].map((star) => (
                                 <button
                                   key={star}
-                                  className="star-button"
-                                  onClick={() => handleRateDriver(selectedOrder._id, star)}
+                                  className={`star-button ${star <= (hoveredRating || selectedRating) ? 'filled' : ''}`}
+                                  onClick={() => setSelectedRating(star)}
+                                  onMouseEnter={() => setHoveredRating(star)}
+                                  onMouseLeave={() => setHoveredRating(0)}
                                   title={`${star} star${star > 1 ? 's' : ''}`}
                                 >
                                   <svg className="star-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1085,7 +1095,9 @@ const CustomerDashboard = () => {
                                 </button>
                               ))}
                             </div>
-                            <p className="rating-hint">Tap to rate</p>
+                            <p className="rating-hint">
+                              {selectedRating > 0 ? `You selected ${selectedRating} star${selectedRating > 1 ? 's' : ''}` : 'Tap to rate'}
+                            </p>
                           </div>
 
                           <div className="review-input-container">
@@ -1102,7 +1114,7 @@ const CustomerDashboard = () => {
                             className="submit-rating-button"
                             onClick={() => {
                               const review = document.getElementById(`review-${selectedOrder._id}`).value;
-                              handleRateDriver(selectedOrder._id, null, review);
+                              handleRateDriver(selectedOrder._id, selectedRating, review);
                             }}
                           >
                             <span className="button-icon">✨</span>

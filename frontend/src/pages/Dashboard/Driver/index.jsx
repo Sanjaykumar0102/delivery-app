@@ -1464,6 +1464,33 @@ const DriverDashboard = () => {
                       )}
                     </div>
 
+                    {/* Customer Rating & Feedback for Delivered Orders */}
+                    {order.status === "Delivered" && order.customerRating && (
+                      <div className="customer-rating-section">
+                        <div className="rating-header">
+                          <span className="rating-icon">⭐</span>
+                          <span className="rating-title">Customer Rating</span>
+                        </div>
+                        <div className="rating-stars">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <span
+                              key={star}
+                              className={star <= order.customerRating ? "star-filled" : "star-empty"}
+                            >
+                              ★
+                            </span>
+                          ))}
+                          <span className="rating-value">({order.customerRating}/5)</span>
+                        </div>
+                        {order.customerReview && (
+                          <div className="customer-feedback">
+                            <p className="feedback-label">💬 Feedback:</p>
+                            <p className="feedback-text">"{order.customerReview}"</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <div className="order-actions">
                       {/* Track Live button for active orders */}
                       {["Assigned", "Accepted", "Arrived", "Picked-Up", "In-Transit"].includes(order.status) && (

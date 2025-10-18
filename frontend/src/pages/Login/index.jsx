@@ -91,15 +91,6 @@ export default function Login() {
     }
   };
 
-  // Quick login for testing
-  const quickLogin = (role) => {
-    const credentials = {
-      Admin: { email: "admin@test.com", password: "admin123" },
-      Driver: { email: "driver@test.com", password: "driver123" },
-      Customer: { email: "customer@test.com", password: "customer123" },
-    };
-    setFormData(credentials[role]);
-  };
 
   return (
     <div className="login-page">
@@ -160,10 +151,6 @@ export default function Login() {
             </div>
 
             <div className="form-options">
-              <label className="remember-me">
-                <input type="checkbox" />
-                <span>Remember me</span>
-              </label>
               <a href="#forgot" className="forgot-link">
                 Forgot Password?
               </a>
@@ -183,36 +170,6 @@ export default function Login() {
               )}
             </button>
 
-            <div className="divider">
-              <span>OR</span>
-            </div>
-
-            <div className="quick-login-section">
-              <p className="quick-login-title">Quick Login (Testing)</p>
-              <div className="quick-login-buttons">
-                <button
-                  type="button"
-                  className="quick-btn admin"
-                  onClick={() => quickLogin("Admin")}
-                >
-                  🛠️ Admin
-                </button>
-                <button
-                  type="button"
-                  className="quick-btn driver"
-                  onClick={() => quickLogin("Driver")}
-                >
-                  🚗 Driver
-                </button>
-                <button
-                  type="button"
-                  className="quick-btn customer"
-                  onClick={() => quickLogin("Customer")}
-                >
-                  👤 Customer
-                </button>
-              </div>
-            </div>
 
             <p className="signup-link">
               Don't have an account?{" "}
