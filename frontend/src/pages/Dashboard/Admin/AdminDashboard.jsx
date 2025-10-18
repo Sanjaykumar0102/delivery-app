@@ -63,7 +63,7 @@ const AdminDashboard = () => {
     setUser(parsedUser);
 
     // Connect to socket for real-time updates
-    const newSocket = io("http://localhost:5000");
+    const newSocket = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:5000");
     setSocket(newSocket);
 
     // Register admin with socket server

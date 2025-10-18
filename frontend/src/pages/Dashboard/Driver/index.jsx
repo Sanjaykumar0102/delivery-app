@@ -88,7 +88,7 @@ const DriverDashboard = () => {
 
     // Connect to socket
     console.log('🔌 Connecting to socket for driver:', parsedUser.name, parsedUser._id);
-    const newSocket = io("http://localhost:5000", {
+    const newSocket = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:5000", {
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: 5,

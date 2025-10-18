@@ -86,7 +86,7 @@ const CustomerDashboard = () => {
     const parsedUser = JSON.parse(userCookie);
     setUser(parsedUser);
 
-    const newSocket = io("http://localhost:5000");
+    const newSocket = io(import.meta.env.VITE_SOCKET_URL || "http://localhost:5000");
     setSocket(newSocket);
 
     // Register customer with socket server
@@ -389,7 +389,8 @@ const CustomerDashboard = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/orders/${orderId}/rate-driver`, {
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+      const response = await fetch(`${apiUrl.replace('/api', '')}/api/orders/${orderId}/rate-driver`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

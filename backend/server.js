@@ -31,10 +31,14 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-  origin: "http://localhost:5173",   // ✅ your frontend
+  origin: [
+    "http://localhost:5173",   // ✅ Local development
+    "http://localhost:3000",   // ✅ Alternative local port
+    "https://delivery-app-two-vert.vercel.app"  // ✅ Deployed frontend
+  ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],                  // ✅ allow cookies
+  allowedHeaders: ["Content-Type", "Authorization"],
 }));
 app.use(morgan("dev"));
 
@@ -68,7 +72,15 @@ const connectDB = async () => {
 // Create HTTP + WebSocket server
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
-  cors: { origin: "*" },
+  cors: {
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:3000",
+      "https://delivery-app-two-vert.vercel.app"
+    ],
+    credentials: true,
+    methods: ["GET", "POST"]
+  },
 });
 
 // Store connected drivers and their socket IDs
