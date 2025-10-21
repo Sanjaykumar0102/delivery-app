@@ -30,9 +30,9 @@
 /* Left Side - Branding */
 .register-left {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 3rem;
+  padding: 4rem 3rem;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
   position: relative;
   overflow: hidden;
@@ -42,13 +42,129 @@
 .brand-content {
   position: relative;
   z-index: 10;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  height: 100%;
+  width: 100%;
+  max-width: 500px;
+  padding-top: 2rem;
+}
+
+.animated-hero {
+  flex-shrink: 0;
+  position: relative;
+  margin-bottom: 2rem;
+}
+
+.vehicle-animation {
+  position: relative;
+  height: 120px;
+  margin-bottom: 2rem;
+  overflow: hidden;
+}
+
+.delivery-truck {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: truckMove 4s ease-in-out infinite;
+}
+
+.truck-body {
+  font-size: 3rem;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+  animation: truckBounce 2s ease-in-out infinite;
+}
+
+.delivery-path {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 2px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2rem;
+}
+
+.path-dot {
+  width: 8px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  animation: pathPulse 1.5s ease-in-out infinite;
+}
+
+.path-dot:nth-child(2) {
+  animation-delay: 0.5s;
+}
+
+.path-dot:nth-child(3) {
+  animation-delay: 1s;
+}
+
+.floating-packages {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.package {
+  position: absolute;
+  font-size: 1.5rem;
+  opacity: 0.8;
+  animation: packageFloat 3s ease-in-out infinite;
+}
+
+.package-1 {
+  top: 20%;
+  left: 15%;
+  animation-delay: 0s;
+}
+
+.package-2 {
+  top: 60%;
+  right: 20%;
+  animation-delay: 1s;
+}
+
+.package-3 {
+  top: 30%;
+  right: 40%;
+  animation-delay: 2s;
+}
+
+.brand-header {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.brand-middle {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem 0;
+  margin-bottom: 2rem;
+}
+
+.brand-footer {
+  flex-shrink: 0;
+  margin-top: 1rem;
 }
 
 .brand-logo {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.75rem;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .brand-icon {
@@ -62,35 +178,56 @@
 }
 
 .brand-title {
-  font-size: 3rem;
+  font-size: 2.8rem;
   font-weight: 700;
   line-height: 1.2;
   margin-bottom: 1rem;
+  text-align: center;
 }
 
 .brand-subtitle {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   opacity: 0.9;
   line-height: 1.6;
-  margin-bottom: 3rem;
+  margin-bottom: 0;
+  text-align: center;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* Stats Showcase */
 .stats-showcase {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 1.5rem;
-  margin-bottom: 3rem;
+  margin-bottom: 0;
+}
+
+.stats-row {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+}
+
+.stats-row-1 {
+  justify-content: center;
+}
+
+.stats-row-2 {
+  justify-content: center;
 }
 
 .stat-box {
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
-  padding: 1.5rem;
+  padding: 2rem 1.5rem;
   border-radius: 15px;
   text-align: center;
   border: 1px solid rgba(255, 255, 255, 0.2);
   transition: all 0.3s ease;
+  min-width: 160px;
+  flex: 0 0 auto;
 }
 
 .stat-box:hover {
@@ -99,28 +236,30 @@
 }
 
 .stat-number {
-  font-size: 2rem;
+  font-size: 2.2rem;
   font-weight: 700;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .stat-label {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   opacity: 0.9;
+  font-weight: 500;
 }
 
 /* Features Showcase */
 .features-showcase {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: 1.5rem;
+  margin-top: 0;
 }
 
 .showcase-item {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 1rem;
+  gap: 1rem;
+  padding: 1.25rem;
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   border-radius: 12px;
@@ -134,7 +273,8 @@
 }
 
 .showcase-icon {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
+  flex-shrink: 0;
 }
 
 /* Decorative Elements */
@@ -179,7 +319,7 @@
 
 /* Right Side - Form */
 .register-right {
-  padding: 4rem;
+  padding: 5rem 4rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -189,32 +329,32 @@
 .form-container {
   width: 100%;
   max-width: 450px;
-  padding: 1rem 0;
+  padding: 2rem 0;
 }
 
 .form-header {
   text-align: center;
-  margin-bottom: 3rem;
+  margin-bottom: 4rem;
 }
 
 .form-title {
   font-size: 2.5rem;
   font-weight: 700;
   color: #1a1a2e;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .form-subtitle {
   color: #666;
   font-size: 1rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 /* Form Styles */
 .register-form {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 3rem;
 }
 
 .error-message {
@@ -236,15 +376,15 @@
 .input-group {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  margin-bottom: 0.5rem;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .input-group label {
   font-weight: 600;
   color: #333;
   font-size: 0.95rem;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.75rem;
 }
 
 .input-wrapper {
@@ -315,15 +455,17 @@
 .input-hint {
   color: #999;
   font-size: 0.85rem;
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 /* Role Selector */
 .role-selector {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  margin-top: 0.5rem;
+  gap: 1.75rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
 }
 
 .role-card {
@@ -331,10 +473,10 @@
   cursor: pointer;
   border: 2px solid #e0e0e0;
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 2rem;
   background: #f8f9fa;
   transition: all 0.3s ease;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.75rem;
 }
 
 .role-card:hover {
@@ -373,7 +515,7 @@
   font-weight: 600;
   color: #333;
   font-size: 1.1rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .role-desc {
@@ -387,7 +529,7 @@
 }
 
 .register-btn {
-  padding: 1.4rem;
+  padding: 1.6rem;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
@@ -401,8 +543,8 @@
   justify-content: center;
   gap: 0.5rem;
   box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-  margin-top: 2rem;
-  margin-bottom: 1.5rem;
+  margin-top: 3rem;
+  margin-bottom: 2rem;
 }
 
 .register-btn:hover:not(:disabled) {
@@ -437,8 +579,9 @@
   text-align: center;
   color: #666;
   font-size: 0.95rem;
-  margin-top: 1rem;
-  padding-top: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #f0f0f0;
 }
 
 .login-link a {
@@ -527,6 +670,51 @@
   }
 }
 
+/* Vehicle Animation Keyframes */
+@keyframes truckMove {
+  0%, 100% {
+    transform: translateX(-10px);
+  }
+  50% {
+    transform: translateX(10px);
+  }
+}
+
+@keyframes truckBounce {
+  0%, 100% {
+    transform: translateY(0) rotate(-2deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(2deg);
+  }
+}
+
+@keyframes pathPulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.5);
+  }
+}
+
+@keyframes packageFloat {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0.6;
+  }
+  33% {
+    transform: translateY(-15px) rotate(5deg);
+    opacity: 0.9;
+  }
+  66% {
+    transform: translateY(-8px) rotate(-3deg);
+    opacity: 0.7;
+  }
+}
+
 @keyframes slideInRight {
   from {
     opacity: 0;
@@ -561,12 +749,20 @@
   }
 
   .register-right {
-    padding: 3rem 2.5rem;
+    padding: 4rem 3rem;
   }
   
   .form-container {
     max-width: 100%;
-    padding: 1.5rem 0;
+    padding: 2rem 0;
+  }
+  
+  .register-form {
+    gap: 2.5rem;
+  }
+  
+  .form-header {
+    margin-bottom: 3.5rem;
   }
 }
 
@@ -592,12 +788,34 @@
     gap: 1.75rem;
   }
 
-  .stats-showcase {
-    grid-template-columns: 1fr;
+  .stats-row {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .stats-row-1,
+  .stats-row-2 {
+    align-items: center;
   }
 
   .features-showcase {
     grid-template-columns: 1fr;
+  }
+  
+  .vehicle-animation {
+    height: 80px;
+  }
+  
+  .truck-body {
+    font-size: 2.5rem;
+  }
+  
+  .package {
+    font-size: 1.2rem;
+  }
+  
+  .brand-title {
+    font-size: 2.2rem;
   }
 }
 

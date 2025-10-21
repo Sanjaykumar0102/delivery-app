@@ -120,47 +120,78 @@ export default function Register() {
         {/* Left Side - Branding */}
         <div className="register-left">
           <div className="brand-content">
-            <div className="brand-logo">
-              <span className="brand-icon">🚚</span>
-              <span className="brand-name">DelivraX</span>
+            {/* Animated Vehicle Section */}
+            <div className="animated-hero">
+              <div className="vehicle-animation">
+                <div className="delivery-truck">
+                  <div className="truck-body">🚚</div>
+                  <div className="delivery-path">
+                    <div className="path-dot"></div>
+                    <div className="path-dot"></div>
+                    <div className="path-dot"></div>
+                  </div>
+                </div>
+                <div className="floating-packages">
+                  <div className="package package-1">📦</div>
+                  <div className="package package-2">📦</div>
+                  <div className="package package-3">📦</div>
+                </div>
+              </div>
+              
+              <div className="brand-header">
+                <div className="brand-logo">
+                  <span className="brand-icon">🚚</span>
+                  <span className="brand-name">DelivraX</span>
+                </div>
+                <h1 className="brand-title">Join Our Delivery Network</h1>
+                <p className="brand-subtitle">
+                  Whether you're a customer looking for fast delivery or a driver wanting to earn,
+                  we've got you covered!
+                </p>
+              </div>
             </div>
-            <h1 className="brand-title">Join Our Delivery Network</h1>
-            <p className="brand-subtitle">
-              Whether you're a customer looking for fast delivery or a driver wanting to earn,
-              we've got you covered!
-            </p>
 
-            <div className="stats-showcase">
-              <div className="stat-box">
-                <div className="stat-number">10K+</div>
-                <div className="stat-label">Happy Customers</div>
-              </div>
-              <div className="stat-box">
-                <div className="stat-number">500+</div>
-                <div className="stat-label">Active Drivers</div>
-              </div>
-              <div className="stat-box">
-                <div className="stat-number">4.8⭐</div>
-                <div className="stat-label">Average Rating</div>
+            {/* Stats Section */}
+            <div className="brand-middle">
+              <div className="stats-showcase">
+                <div className="stats-row stats-row-1">
+                  <div className="stat-box">
+                    <div className="stat-number">10K+</div>
+                    <div className="stat-label">Happy Customers</div>
+                  </div>
+                  <div className="stat-box">
+                    <div className="stat-number">500+</div>
+                    <div className="stat-label">Active Drivers</div>
+                  </div>
+                </div>
+                <div className="stats-row stats-row-2">
+                  <div className="stat-box">
+                    <div className="stat-number">4.8⭐</div>
+                    <div className="stat-label">Average Rating</div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="features-showcase">
-              <div className="showcase-item">
-                <span className="showcase-icon">⚡</span>
-                <span>Lightning Fast Delivery</span>
-              </div>
-              <div className="showcase-item">
-                <span className="showcase-icon">📱</span>
-                <span>Real-Time Tracking</span>
-              </div>
-              <div className="showcase-item">
-                <span className="showcase-icon">💰</span>
-                <span>Best Prices</span>
-              </div>
-              <div className="showcase-item">
-                <span className="showcase-icon">🔒</span>
-                <span>100% Secure</span>
+            {/* Features Section */}
+            <div className="brand-footer">
+              <div className="features-showcase">
+                <div className="showcase-item">
+                  <span className="showcase-icon">⚡</span>
+                  <span>Lightning Fast Delivery</span>
+                </div>
+                <div className="showcase-item">
+                  <span className="showcase-icon">📱</span>
+                  <span>Real-Time Tracking</span>
+                </div>
+                <div className="showcase-item">
+                  <span className="showcase-icon">💰</span>
+                  <span>Best Prices</span>
+                </div>
+                <div className="showcase-item">
+                  <span className="showcase-icon">🔒</span>
+                  <span>100% Secure</span>
+                </div>
               </div>
             </div>
           </div>
