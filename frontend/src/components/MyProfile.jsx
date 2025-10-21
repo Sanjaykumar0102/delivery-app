@@ -3,7 +3,7 @@ import Cookies from "js-cookie";
 import axios from "../utils/axios";
 import "./MyProfile.css";
 
-const MyProfile = ({ user, onUpdate }) => {
+const MyProfile = ({ user, onUpdate, realTimeStats }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || "",
@@ -258,22 +258,22 @@ const MyProfile = ({ user, onUpdate }) => {
               <div className="stat-card">
                 <div className="stat-title">Total Orders</div>
                 <div className="stat-icon">📦</div>
-                <div className="stat-value">{user?.stats?.totalOrders || 0}</div>
-                <div className="stat-label">Total Orders Placed</div>
+                <div className="stat-value">{realTimeStats?.totalOrders || user?.stats?.totalOrders || 0}</div>
+                {/* <div className="stat-label">Total Orders Placed</div> */}
                 <div className="stat-description">All orders you've created</div>
               </div>
               <div className="stat-card">
                 <div className="stat-title">Completed</div>
                 <div className="stat-icon">✅</div>
-                <div className="stat-value">{user?.stats?.completedOrders || 0}</div>
-                <div className="stat-label">Successfully Delivered</div>
+                <div className="stat-value">{realTimeStats?.completedOrders || user?.stats?.completedOrders || 0}</div>
+                {/* <div className="stat-label">Successfully Delivered</div> */}
                 <div className="stat-description">Orders completed successfully</div>
               </div>
               <div className="stat-card">
                 <div className="stat-title">Total Spent</div>
                 <div className="stat-icon">💰</div>
-                <div className="stat-value currency-value">₹{user?.stats?.totalSpent?.toFixed(2) || "0.00"}</div>
-                <div className="stat-label">Total Amount Spent</div>
+                <div className="stat-value currency-value">₹{realTimeStats?.totalSpent || user?.stats?.totalSpent?.toFixed(2) || "0.00"}</div>
+                {/* <div className="stat-label">Total Amount Spent</div> */}
                 <div className="stat-description">Money spent on deliveries</div>
               </div>
               <div className="stat-card">
@@ -282,7 +282,7 @@ const MyProfile = ({ user, onUpdate }) => {
                 <div className={`stat-value status-value ${user?.isActive ? 'active-status' : 'inactive-status'}`}>
                   {user?.isActive ? "Active" : "Inactive"}
                 </div>
-                <div className="stat-label">Account Status</div>
+                {/* <div className="stat-label">Account Status</div> */}
                 <div className="stat-description">{user?.isActive ? "Account is active and can place orders" : "Account is inactive"}</div>
               </div>
             </div>

@@ -38,6 +38,7 @@ const CustomerDashboard = () => {
   const [searchingForDriver, setSearchingForDriver] = useState(false);
   const [pendingOrderId, setPendingOrderId] = useState(null);
   const [hasActiveOrder, setHasActiveOrder] = useState(false);
+  const [retryCounter, setRetryCounter] = useState(0);
   
   // Rating state
   const [selectedRating, setSelectedRating] = useState(0);
@@ -102,6 +103,10 @@ const CustomerDashboard = () => {
       });
     });
 
+    // Fetch orders on initial load
+    console.log("🚀 Initial load - fetching orders...");
+    fetchOrders();
+
     return () => {
       newSocket.close();
     };
@@ -117,6 +122,14 @@ const CustomerDashboard = () => {
         .catch((error) => {
           console.error("Error refreshing user data on profile view:", error);
         });
+    }
+  }, [activeTab]);
+
+  // Fetch orders when orders tab is activated
+  useEffect(() => {
+    if (activeTab === "orders") {
+      console.log("📋 Orders tab activated - fetching orders...");
+      fetchOrders();
     }
   }, [activeTab]);
 
@@ -211,6 +224,31 @@ const CustomerDashboard = () => {
   }, [vehicleType, pickup, dropoff]);
 
   // Haversine formula to calculate distance between two coordinates
+  // Calculate real-time stats from orders
+  const calculateStats = () => {
+    console.log("📊 DEBUG: Calculating stats...");
+    console.log("📊 DEBUG: Orders array:", orders);
+    console.log("📊 DEBUG: Orders length:", orders.length);
+    
+    const totalOrders = orders.length;
+    const completedOrders = orders.filter(order => order.status === "Delivered").length;
+    const totalSpent = orders
+      .filter(order => order.status === "Delivered")
+      .reduce((sum, order) => sum + (order.fare || 0), 0);
+    
+    const calculatedStats = {
+      totalOrders,
+      completedOrders,
+      totalSpent: totalSpent.toFixed(2)
+    };
+    
+    console.log("📊 DEBUG: Calculated stats:", calculatedStats);
+    
+    return calculatedStats;
+  };
+
+  const stats = calculateStats();
+
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371; // Radius of the Earth in km
     const dLat = (lat2 - lat1) * (Math.PI / 180);
@@ -306,10 +344,22 @@ const CustomerDashboard = () => {
   };
 
   const handleCancelSearching = async () => {
-    if (pendingOrderId) {
-      await handleCancelOrder(pendingOrderId);
+    console.log("🚫 Cancelling search for order:", pendingOrderId);
+    try {
+      if (pendingOrderId) {
+        await handleCancelOrder(pendingOrderId);
+      }
+    } catch (error) {
+      console.error("❌ Error cancelling order:", error);
+    } finally {
+      // Always reset states regardless of API success/failure
       setSearchingForDriver(false);
       setPendingOrderId(null);
+      setHasActiveOrder(false);
+      setLoading(false);
+      setError("");
+      setRetryCounter(0); // Reset retry counter
+      console.log("✅ Search cancelled and states reset");
     }
   };
 
@@ -840,6 +890,45 @@ const CustomerDashboard = () => {
               <p>Track all your deliveries</p>
             </div>
 
+            {/* Real-time Stats Section */}
+            <div className="stats-section">
+              <h3>📊 Order Stats</h3>
+              <div className="stats-grid">
+                <div className="stat-card">
+                  <div className="stat-icon">📦</div>
+                  <div className="stat-content">
+                    <div className="stat-number">{stats.totalOrders}</div>
+                    <div className="stat-label">TOTAL ORDERS</div>
+                    <div className="stat-description">All orders you've created</div>
+                  </div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-icon">✅</div>
+                  <div className="stat-content">
+                    <div className="stat-number">{stats.completedOrders}</div>
+                    <div className="stat-label">COMPLETED</div>
+                    <div className="stat-description">Orders completed successfully</div>
+                  </div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-icon">💰</div>
+                  <div className="stat-content">
+                    <div className="stat-number">₹{stats.totalSpent}</div>
+                    <div className="stat-label">TOTAL SPENT</div>
+                    <div className="stat-description">Money spent on deliveries</div>
+                  </div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-icon">🎯</div>
+                  <div className="stat-content">
+                    <div className="stat-number">ACTIVE</div>
+                    <div className="stat-label">ACCOUNT STATUS</div>
+                    <div className="stat-description">Account is active and can place orders</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {orders.length === 0 ? (
               <div className="empty-state-v2">
                 <div className="empty-icon">📭</div>
@@ -1306,26 +1395,116 @@ const CustomerDashboard = () => {
 
         {/* My Profile Tab */}
         {activeTab === "profile" && (
-          <MyProfile user={user} onUpdate={(updatedUser) => setUser(updatedUser)} />
+          <MyProfile 
+            user={user} 
+            onUpdate={(updatedUser) => setUser(updatedUser)}
+            realTimeStats={stats}
+          />
         )}
       </main>
 
       {/* Searching for Driver Overlay */}
       {searchingForDriver && pendingOrderId && (
         <SearchingDriver 
+          key={`search-${pendingOrderId}-${retryCounter}`}
           orderId={pendingOrderId}
           onCancel={handleCancelSearching}
           onTimeout={handleSearchTimeout}
           onRetry={async () => {
-            console.log("🔄 Retrying driver search...");
+            console.log("🔄 Retrying driver search for order:", pendingOrderId);
             try {
-              // Call API to re-notify drivers
-              const response = await axios.put(`/orders/${pendingOrderId}/retry-search`);
-              console.log("✅ Retry response:", response.data);
-              alert(`🔄 Search restarted! ${response.data.driversNotified} drivers notified.`);
+              if (!pendingOrderId) {
+                throw new Error("No pending order ID found");
+              }
+              
+              // First, try to get the order details to make sure it still exists
+              console.log("📋 Checking order status before retry...");
+              const orderCheckResponse = await axios.get(`/orders/${pendingOrderId}`);
+              const orderData = orderCheckResponse.data;
+              
+              console.log("📦 Order found:", orderData);
+              
+              // Check if order is still in a retryable state
+              if (!["Pending", "Assigned"].includes(orderData.status)) {
+                throw new Error(`Order is in ${orderData.status} status and cannot be retried`);
+              }
+              
+              // Try the retry-search endpoint first
+              let response;
+              try {
+                console.log("🔄 Attempting retry-search endpoint...");
+                response = await axios.put(`/orders/${pendingOrderId}/retry-search`);
+                console.log("✅ Retry-search response:", response.data);
+              } catch (retryError) {
+                console.log("⚠️ Retry-search endpoint failed:", retryError.response?.data || retryError.message);
+                console.log("🔄 Trying alternative approach - updating order status...");
+                
+                // If retry-search endpoint doesn't exist, update order status to re-trigger notifications
+                try {
+                  response = await axios.put(`/orders/${pendingOrderId}/status`, { 
+                    status: "Pending",
+                    forceNotify: true 
+                  });
+                  console.log("✅ Alternative retry response:", response.data);
+                } catch (statusError) {
+                  console.log("⚠️ Status update failed, trying direct notification approach...");
+                  
+                  // Last resort: try to directly notify drivers (if such endpoint exists)
+                  try {
+                    response = await axios.post(`/orders/${pendingOrderId}/notify-drivers`);
+                    console.log("✅ Direct notification response:", response.data);
+                  } catch (notifyError) {
+                    console.log("❌ All retry methods failed");
+                    throw new Error("Unable to retry search. All methods failed.");
+                  }
+                }
+              }
+              
+              // Show success message
+              const driversNotified = response.data.driversNotified || response.data.message || "Drivers";
+              alert(`🔄 Search restarted! ${driversNotified} notified.`);
+              
+              // Increment retry counter to force component re-render
+              setRetryCounter(prev => prev + 1);
+              
             } catch (error) {
               console.error("❌ Error retrying search:", error);
-              alert("❌ Failed to retry search. Please try again.");
+              console.error("❌ Error details:", error.response?.data);
+              
+              let errorMessage = "Failed to retry search";
+              
+              if (error.response?.status === 404) {
+                errorMessage = "Order not found. It may have been cancelled or completed.";
+                // Reset the searching state since order doesn't exist
+                setSearchingForDriver(false);
+                setPendingOrderId(null);
+                setRetryCounter(0);
+                
+                // Offer to create a new order with the same details
+                const createNewOrder = window.confirm(
+                  "The original order was not found. Would you like to create a new order with the same details?"
+                );
+                
+                if (createNewOrder) {
+                  // Reset to booking tab to allow user to place a new order
+                  setActiveTab("book");
+                  alert("Please fill in your delivery details again to place a new order.");
+                }
+              } else if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+              } else if (error.message) {
+                errorMessage = error.message;
+              }
+              
+              alert(`❌ ${errorMessage}`);
+              
+              // If order not found, refresh orders to get current state
+              if (error.response?.status === 404) {
+                fetchOrders();
+              }
+              
+              // Re-throw to let SearchingDriver component handle the error state
+              throw error;
             }
           }}
         />

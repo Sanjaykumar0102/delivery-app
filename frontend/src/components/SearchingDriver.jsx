@@ -8,8 +8,8 @@ const SearchingDriver = ({ orderId, onCancel, onTimeout, onRetry }) => {
   const MAX_WAIT_TIME = 120; // 2 minutes in seconds
 
   useEffect(() => {
+    // Reset timer when component mounts or when retrying
     if (isRetrying) {
-      // Reset state when retrying
       setTimeElapsed(0);
       setTimedOut(false);
       setIsRetrying(false);
@@ -18,7 +18,7 @@ const SearchingDriver = ({ orderId, onCancel, onTimeout, onRetry }) => {
     const timer = setInterval(() => {
       setTimeElapsed((prev) => {
         const newTime = prev + 1;
-        if (newTime >= MAX_WAIT_TIME) {
+        if (newTime >= MAX_WAIT_TIME && !timedOut) {
           setTimedOut(true);
           clearInterval(timer);
           if (onTimeout) {
@@ -30,7 +30,7 @@ const SearchingDriver = ({ orderId, onCancel, onTimeout, onRetry }) => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [onTimeout, isRetrying]);
+  }, [onTimeout, isRetrying, timedOut]);
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -73,16 +73,37 @@ const SearchingDriver = ({ orderId, onCancel, onTimeout, onRetry }) => {
           </div>
 
           <div className="timeout-actions">
-            <button className="retry-booking-btn" onClick={() => {
-              setIsRetrying(true);
-              if (onRetry) {
-                onRetry();
-              }
-            }}>
+            <button 
+              className="retry-booking-btn" 
+              onClick={async () => {
+                console.log("🔄 Retry button clicked");
+                try {
+                  // Reset component state first
+                  setIsRetrying(true);
+                  setTimedOut(false);
+                  setTimeElapsed(0);
+                  
+                  // Call the retry function passed from parent
+                  if (onRetry) {
+                    await onRetry();
+                  }
+                } catch (error) {
+                  console.error("❌ Error in retry:", error);
+                  // Reset to timeout state if retry fails
+                  setTimedOut(true);
+                  setIsRetrying(false);
+                }
+              }}
+            >
               <span className="btn-icon">🔄</span>
               <span className="btn-text">Retry Search</span>
             </button>
-            <button className="close-booking-btn" onClick={onCancel}>
+            <button className="close-booking-btn" onClick={() => {
+              console.log("✕ Close button clicked");
+              if (onCancel) {
+                onCancel();
+              }
+            }}>
               <span className="btn-icon">✕</span>
               <span className="btn-text">Close</span>
             </button>
@@ -184,7 +205,12 @@ const SearchingDriver = ({ orderId, onCancel, onTimeout, onRetry }) => {
           </div>
         </div>
 
-        <button className="cancel-booking-btn" onClick={onCancel}>
+        <button className="cancel-booking-btn" onClick={() => {
+          console.log("✕ Cancel booking button clicked");
+          if (onCancel) {
+            onCancel();
+          }
+        }}>
           <span className="btn-icon">✕</span>
           <span className="btn-text">Cancel booking</span>
         </button>

@@ -44,9 +44,16 @@ const DriverDashboard = () => {
   const [location, setLocation] = useState({ lat: null, lng: null });
   const [locationError, setLocationError] = useState("");
   
-  // Notification state
-  const [notification, setNotification] = useState(null);
+  // Notification state - persistent storage for notifications tab
+  const [notifications, setNotifications] = useState(() => {
+    // Load notifications from localStorage on component mount
+    const saved = localStorage.getItem('driverNotifications');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // Modal notification state
   const [showNotification, setShowNotification] = useState(false);
+  const [notification, setNotification] = useState(null);
 
   // Initialize user and socket
   useEffect(() => {
@@ -120,6 +127,7 @@ const DriverDashboard = () => {
       });
       
       console.log("✅ Registration emitted for driver:", parsedUser.name);
+      console.log("🔔 Driver should receive notifications for vehicle type:", parsedUser?.driverDetails?.vehicleType);
     });
     
     newSocket.on("connect_error", (error) => {
@@ -155,7 +163,7 @@ const DriverDashboard = () => {
           return prevCurrentOrder; // Don't change current order
         }
 
-        // No active order, show notification
+        // No active order, show notification and store persistently
         console.log("✅ SHOWING NOTIFICATION for order:", orderData._id);
         console.log("📱 Notification data:", {
           orderId: orderData._id,
@@ -165,13 +173,29 @@ const DriverDashboard = () => {
           fare: orderData.fare
         });
 
+        // Store notification persistently
+        const newNotification = {
+          id: orderData._id,
+          orderId: orderData._id,
+          timestamp: new Date().toISOString(),
+          status: 'pending',
+          ...orderData
+        };
+
+        setNotifications(prev => {
+          const updated = [newNotification, ...prev];
+          localStorage.setItem('driverNotifications', JSON.stringify(updated));
+          return updated;
+        });
+
+        // Show modal notification (existing behavior)
         setNotification(orderData);
         setShowNotification(true);
         playNotificationSound();
 
-        // Auto-hide after 30 seconds
+        // Auto-hide modal after 30 seconds (but keep in persistent storage)
         setTimeout(() => {
-          console.log("⏰ Auto-hiding notification after 30 seconds");
+          console.log("⏰ Auto-hiding notification modal after 30 seconds");
           setShowNotification(false);
         }, 30000);
 
@@ -194,8 +218,30 @@ const DriverDashboard = () => {
         setShowNotification(false);
         setNotification(null);
       }
+      // Remove from persistent notifications
+      setNotifications(prev => {
+        const updated = prev.filter(n => n.orderId !== data.orderId);
+        localStorage.setItem('driverNotifications', JSON.stringify(updated));
+        return updated;
+      });
       // Refresh available orders
       fetchAvailableOrders();
+    });
+
+    // Listen for customer search timeout
+    newSocket.on("customerSearchTimeout", (data) => {
+      console.log(`⏰ Customer search timed out for order ${data.orderId}`);
+      // Remove from notification if showing
+      if (notification && notification._id === data.orderId) {
+        setShowNotification(false);
+        setNotification(null);
+      }
+      // Remove from persistent notifications
+      setNotifications(prev => {
+        const updated = prev.filter(n => n.orderId !== data.orderId);
+        localStorage.setItem('driverNotifications', JSON.stringify(updated));
+        return updated;
+      });
     });
 
     // Listen for order cancellation
@@ -207,6 +253,12 @@ const DriverDashboard = () => {
         setNotification(null);
         alert("⚠️ " + (data.message || "This order was cancelled"));
       }
+      // Remove from persistent notifications
+      setNotifications(prev => {
+        const updated = prev.filter(n => n.orderId !== data.orderId);
+        localStorage.setItem('driverNotifications', JSON.stringify(updated));
+        return updated;
+      });
       // Refresh orders
       fetchAvailableOrders();
       fetchMyOrders();
@@ -299,6 +351,7 @@ const DriverDashboard = () => {
       newSocket.off("newOrderAvailable");
       newSocket.off("orderAssigned");
       newSocket.off("orderAcceptedByOther");
+      newSocket.off("customerSearchTimeout");
       newSocket.off("orderCancelled");
       newSocket.off("approvalStatusUpdate");
       newSocket.off("earningsUpdate");
@@ -507,6 +560,13 @@ const DriverDashboard = () => {
       const response = await axios.put(`/orders/${orderId}/accept`);
       console.log("✅ Accept response:", response.data);
 
+      // Remove from persistent notifications
+      setNotifications(prev => {
+        const updated = prev.filter(n => n.orderId !== orderId);
+        localStorage.setItem('driverNotifications', JSON.stringify(updated));
+        return updated;
+      });
+
       setShowNotification(false);
       setNotification(null);
 
@@ -549,6 +609,15 @@ const DriverDashboard = () => {
   // If customer cancels after driver accepts, customer pays 50% cancellation fee to driver
 
   const handleRejectOrder = () => {
+    if (notification) {
+      // Remove from persistent notifications
+      setNotifications(prev => {
+        const updated = prev.filter(n => n.orderId !== notification._id);
+        localStorage.setItem('driverNotifications', JSON.stringify(updated));
+        return updated;
+      });
+    }
+
     setShowNotification(false);
     setNotification(null);
   };
@@ -704,6 +773,20 @@ const DriverDashboard = () => {
     return icons[currentStatus] || "→";
   };
 
+  const getStatusIcon = (status) => {
+    const icons = {
+      Pending: "⏳",
+      Assigned: "📋",
+      Accepted: "✅",
+      Arrived: "📍",
+      "Picked-Up": "📦",
+      "In-Transit": "🚚",
+      Delivered: "✅",
+      Cancelled: "❌",
+    };
+    return icons[status] || "📦";
+  };
+
   return (
     <div className="driver-dashboard">
       {/* Header */}
@@ -783,7 +866,19 @@ const DriverDashboard = () => {
           >
             <span className="nav-icon">📦</span>
             <span className="nav-text">My Orders</span>
-            {myOrders.length > 0 && <span className="badge">{myOrders.length}</span>}
+            {myOrders.filter(order => order.status === "Delivered").length > 0 && <span className="badge">{myOrders.filter(order => order.status === "Delivered").length}</span>}
+          </button>
+          <button
+            className={`nav-btn ${activeTab === "notifications" ? "active" : ""}`}
+            onClick={() => setActiveTab("notifications")}
+          >
+            <span className="nav-icon">🔔</span>
+            <span className="nav-text">Notifications</span>
+            {notifications.filter(n => n.status === 'pending').length > 0 && (
+              <span className="badge urgent">
+                {notifications.filter(n => n.status === 'pending').length}
+              </span>
+            )}
           </button>
           <button
             className={`nav-btn ${activeTab === "earnings" ? "active" : ""}`}
@@ -829,7 +924,7 @@ const DriverDashboard = () => {
                 <div className="info-row">
                   <span className="label">📦 Items:</span>
                   <span className="value">
-                    {notification.items?.map((item) => item.name).join(", ")}
+                    {(notification.items || []).map((item) => item.name).join(", ")}
                   </span>
                 </div>
               </div>
@@ -1199,7 +1294,7 @@ const DriverDashboard = () => {
                             <div className="info-item">
                               <span className="info-label">📦 Items:</span>
                               <span className="info-value">
-                                {notification.items?.map((item) => item.name).join(", ")}
+                                {(notification.items || []).map((item) => item.name).join(", ")}
                               </span>
                             </div>
                             <div className="info-item">
@@ -1406,18 +1501,18 @@ const DriverDashboard = () => {
           <div className="orders-section">
             <div className="section-header">
               <h2>📦 My Orders</h2>
-              <p>View all your deliveries</p>
+              <p>View your completed deliveries</p>
             </div>
 
-            {myOrders.length === 0 ? (
+            {myOrders.filter(order => order.status === "Delivered").length === 0 ? (
               <div className="empty-state">
                 <div className="empty-icon">📭</div>
-                <h3>No orders yet</h3>
-                <p>{isOnDuty ? "Waiting for new orders..." : "Turn on duty to start receiving orders"}</p>
+                <h3>No completed orders yet</h3>
+                <p>Your delivered orders will appear here</p>
               </div>
             ) : (
               <div className="orders-grid">
-                {myOrders.map((order) => (
+                {myOrders.filter(order => order.status === "Delivered").map((order) => (
                   <div key={order._id} className="order-card">
                     <div className="order-header">
                       <span
@@ -1464,7 +1559,6 @@ const DriverDashboard = () => {
                       )}
                     </div>
 
-                    {/* Customer Rating & Feedback for Delivered Orders */}
                     {order.status === "Delivered" && order.customerRating && (
                       <div className="customer-rating-section">
                         <div className="rating-header">
@@ -1475,7 +1569,7 @@ const DriverDashboard = () => {
                           {[1, 2, 3, 4, 5].map((star) => (
                             <span
                               key={star}
-                              className={star <= (order.customerRating?.rating || 0) ? "star-filled" : "star-empty"}
+                              className={star <= Math.round(order.customerRating?.rating || 0) ? "star-filled" : "star-empty"}
                             >
                               ★
                             </span>
@@ -1492,31 +1586,7 @@ const DriverDashboard = () => {
                     )}
 
                     <div className="order-actions">
-                      {/* Track Live button for active orders */}
-                      {["Assigned", "Accepted", "Arrived", "Picked-Up", "In-Transit"].includes(order.status) && (
-                        <button
-                          className="track-live-btn"
-                          onClick={() => {
-                            console.log("🗺️ Track Live clicked for order:", order._id);
-                            setCurrentOrder(order);
-                            setShowWorkflow(true);
-                          }}
-                        >
-                          🗺️ Track Live
-                        </button>
-                      )}
-                      
-                      {/* Status update button */}
-                      {getNextStatus(order.status) && (
-                        <button
-                          className="status-update-btn"
-                          onClick={() =>
-                            handleUpdateStatus(order._id, getNextStatus(order.status))
-                          }
-                        >
-                          {getNextStatusLabel(order.status)}
-                        </button>
-                      )}
+                      {/* No actions for completed orders */}
                     </div>
                   </div>
                 ))}
@@ -1524,6 +1594,109 @@ const DriverDashboard = () => {
             )}
           </div>
         )}
+
+        {/* Notifications Tab */}
+        {activeTab === "notifications" && (
+          <div className="notifications-section">
+            <div className="section-header">
+              <h2>🔔 Notifications</h2>
+              <p>Order notifications and missed opportunities</p>
+            </div>
+
+            {notifications.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-icon">📭</div>
+                <h3>No notifications</h3>
+                <p>All caught up! New order notifications will appear here.</p>
+              </div>
+            ) : (
+              <div className="notifications-grid">
+                {notifications.map((notification) => (
+                  <div key={notification.id} className="notification-card">
+                    <div className="notification-header">
+                      <span className="notification-timestamp">
+                        {new Date(notification.timestamp).toLocaleString()}
+                      </span>
+                      <span className={`notification-status ${notification.status}`}>
+                        {notification.status === 'pending' ? '🔴 Customer Waiting' : '✅ Accepted'}
+                      </span>
+                      {notification.status === 'pending' && (
+                        <span className="waiting-indicator">
+                          ⏰ {Math.floor((Date.now() - new Date(notification.timestamp)) / 60000)}m ago
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="notification-body">
+                      <div className="notification-route">
+                        <div className="route-point">
+                          <span className="route-icon">📍</span>
+                          <div>
+                            <p className="route-label">Pickup</p>
+                            <p className="route-address">{notification.pickup?.address}</p>
+                          </div>
+                        </div>
+                        <div className="route-line"></div>
+                        <div className="route-point">
+                          <span className="route-icon">🎯</span>
+                          <div>
+                            <p className="route-label">Dropoff</p>
+                            <p className="route-address">{notification.dropoff?.address}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="notification-details">
+                        <div className="detail-row">
+                          <span>💰 Fare:</span>
+                          <span className="fare">₹{notification.fare}</span>
+                        </div>
+                        <div className="detail-row">
+                          <span>🚗 Vehicle:</span>
+                          <span>{notification.vehicleType}</span>
+                        </div>
+                        <div className="detail-row">
+                          <span>💳 Payment:</span>
+                          <span>{notification.paymentMethod}</span>
+                        </div>
+                        <div className="detail-row">
+                          <span>📦 Items:</span>
+                          <span>{(notification.items || []).map((item) => item.name).join(", ")}</span>
+                        </div>
+                      </div>
+
+                      {notification.status === 'pending' && (
+                        <div className="notification-actions">
+                          <div className="urgency-indicator">
+                            🚨 Customer is actively waiting for a driver!
+                          </div>
+                          <button
+                            className="accept-btn-notification priority"
+                            onClick={() => handleAcceptOrder(notification.orderId)}
+                          >
+                            ✅ Accept & Help Customer
+                          </button>
+                          <button
+                            className="reject-btn-notification"
+                            onClick={() => {
+                              setNotifications(prev => {
+                                const updated = prev.filter(n => n.id !== notification.id);
+                                localStorage.setItem('driverNotifications', JSON.stringify(updated));
+                                return updated;
+                              });
+                            }}
+                          >
+                            🗑️ Dismiss
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )} 
 
         {/* Earnings Tab */}
         {activeTab === "earnings" && (
@@ -1554,7 +1727,7 @@ const DriverDashboard = () => {
 
             <div className="earnings-chart">
               <h3>📈 Earnings Overview</h3>
-              <EarningsChart 
+              <EarningsChart
                 earningsData={{
                   labels: ['Today', 'This Week', 'This Month', 'Total'],
                   daily: [
