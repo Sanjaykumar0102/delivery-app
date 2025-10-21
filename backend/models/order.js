@@ -57,6 +57,22 @@ const orderSchema = new mongoose.Schema(
       enum: ["Pending", "Assigned", "Accepted", "Arrived", "Picked-Up", "In-Transit", "Delivered", "Cancelled"],
       default: "Pending",
     },
+    priority: {
+      type: String,
+      enum: ["Normal", "High", "Urgent"],
+      default: "Normal",
+    },
+    waitingTime: {
+      type: Number,
+      default: 150, // 2min 30sec in seconds
+    },
+    assignedAt: {
+      type: Date,
+    },
+    canBeManuallyAssigned: {
+      type: Boolean,
+      default: false,
+    },
     paymentMethod: {
       type: String,
       enum: ["Cash", "Online", "Wallet"],

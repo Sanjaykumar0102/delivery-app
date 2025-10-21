@@ -115,9 +115,29 @@ const TrackOrder = () => {
   }, [socket, order, orderId]);
 
   const fetchOrderDetails = async () => {
+    console.log("🚀 DEBUG: fetchOrderDetails called for orderId:", orderId);
+    
     try {
       setLoading(true);
-      const data = await orderService.getOrderById(orderId);
+      console.log("📡 DEBUG: Calling trackOrder API...");
+      
+      const data = await orderService.trackOrder(orderId);
+      
+      console.log("✅ DEBUG: API Response received!");
+      console.log("🔍 DEBUG: Full Order data:", JSON.stringify(data, null, 2));
+      console.log("👤 DEBUG: Driver data:", data.driver);
+      console.log("🚗 DEBUG: Vehicle data:", data.vehicle);
+      console.log("📱 DEBUG: Driver phone:", data.driver?.phone);
+      console.log("🔢 DEBUG: Vehicle plate:", data.vehicle?.plateNumber);
+      
+      if (!data.driver) {
+        console.warn("⚠️ WARNING: No driver assigned to this order!");
+      }
+      
+      if (!data.vehicle) {
+        console.warn("⚠️ WARNING: No vehicle assigned to this order!");
+      }
+      
       setOrder(data);
       
       // If driver is assigned, get their location
@@ -131,9 +151,13 @@ const TrackOrder = () => {
         setShowRatingModal(true);
       }
     } catch (err) {
+      console.error("❌ DEBUG: Error fetching order:", err);
+      console.error("❌ DEBUG: Error message:", err.message);
+      console.error("❌ DEBUG: Error response:", err.response?.data);
       setError(err.message || "Failed to fetch order details");
     } finally {
       setLoading(false);
+      console.log("🏁 DEBUG: fetchOrderDetails completed");
     }
   };
 
@@ -332,10 +356,30 @@ const TrackOrder = () => {
           </div>
           <div className="driver-details">
             <h3>{order.driver.name || "Driver"}</h3>
-            <p>{order.vehicleType} • {order.driver.phone || "No phone"}</p>
+            
+            {/* Phone Number */}
+            <p className="driver-phone">
+              📱 {order.driver.phone || order.driver.phoneNumber || "N/A"}
+            </p>
+            
+            {/* Vehicle Details */}
+            {order.vehicle && (
+              <div className="vehicle-info">
+                <p>🚗 {order.vehicle.type || order.vehicleType}</p>
+                {order.vehicle.plateNumber && (
+                  <p>🔢 {order.vehicle.plateNumber}</p>
+                )}
+                {order.vehicle.model && (
+                  <p>{order.vehicle.model} {order.vehicle.year && `(${order.vehicle.year})`}</p>
+                )}
+                {order.vehicle.color && (
+                  <p>🎨 {order.vehicle.color}</p>
+                )}
+              </div>
+            )}
           </div>
-          {order.driver.phone && (
-            <a href={`tel:${order.driver.phone}`} className="call-driver-btn">
+          {(order.driver.phone || order.driver.phoneNumber) && (
+            <a href={`tel:${order.driver.phone || order.driver.phoneNumber}`} className="call-driver-btn">
               📞 Call
             </a>
           )}

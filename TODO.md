@@ -1,18 +1,15 @@
-# TODO: Add Driver Order Rejection Feature
+# Driver Information Card Layout Fix
 
-## Backend Changes
-- [ ] Add `acceptedAt` timestamp to Order model
-- [ ] Update `acceptOrder` controller to set `acceptedAt` when status becomes "Accepted"
-- [ ] Add new `rejectAcceptedOrder` endpoint that allows rejection only within 2 minutes
-- [ ] Update order routes to include rejection endpoint
+## Current Issue
+- Call driver button and vehicle information are going outside the card boundaries
+- `.driver-actions-section` uses CSS grid that causes overflow on smaller screens
 
-## Frontend Changes
-- [ ] Update OrderWorkflow component to show conditional "Reject" button for "Accepted" status
-- [ ] Add rejection handler in DriverDashboard component
-- [ ] Handle UI updates after rejection
+## Tasks
+- [x] Change `.driver-actions-section` from grid to flexbox layout
+- [x] Adjust padding and margins to prevent overflow
+- [x] Ensure proper responsive behavior across screen sizes
+- [ ] Test layout on different screen sizes
+- [ ] Verify call driver button and vehicle info stay within card boundaries
 
-## Testing
-- [ ] Test rejection within 2-minute window
-- [ ] Test rejection after 2-minute window (should fail)
-- [ ] Verify socket notifications to other drivers
-- [ ] Ensure proper UI updates after rejection
+## Files to Edit
+- `frontend/src/pages/Dashboard/Customer/CustomerDashboard.css`

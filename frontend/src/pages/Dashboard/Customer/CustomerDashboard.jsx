@@ -211,17 +211,60 @@ const CustomerDashboard = () => {
   };
 
   const fetchOrders = async () => {
+    console.log("🚀 DEBUG: fetchOrders called");
+    
     try {
+      console.log("📡 DEBUG: Calling getOrders API...");
       const data = await getOrders();
+      
+      console.log("✅ DEBUG: Orders received, count:", data.length);
+      console.log("🔍 DEBUG: All orders:", data);
+      
+      // Log each order's driver and vehicle info with DETAILED breakdown
+      data.forEach((order, index) => {
+        console.log(`\n📦 DEBUG: Order ${index + 1} (${order._id.slice(-6)}):`);
+        console.log(`   Status: ${order.status}`);
+        console.log(`   Driver Object:`, order.driver);
+        
+        if (order.driver) {
+          console.log(`   ├─ Driver._id:`, order.driver._id);
+          console.log(`   ├─ Driver.name:`, order.driver.name);
+          console.log(`   ├─ Driver.email:`, order.driver.email);
+          console.log(`   ├─ Driver.phone:`, order.driver.phone);
+          console.log(`   ├─ Driver.stats:`, order.driver.stats);
+          console.log(`   ├─ Driver.vehicleAssigned:`, order.driver.vehicleAssigned);
+          console.log(`   └─ Driver.driverDetails:`, order.driver.driverDetails);
+        }
+        
+        console.log(`   Vehicle Object:`, order.vehicle);
+        if (order.vehicle) {
+          console.log(`   ├─ Vehicle.type:`, order.vehicle.type);
+          console.log(`   ├─ Vehicle.plateNumber:`, order.vehicle.plateNumber);
+          console.log(`   ├─ Vehicle.model:`, order.vehicle.model);
+          console.log(`   ├─ Vehicle.year:`, order.vehicle.year);
+          console.log(`   └─ Vehicle.color:`, order.vehicle.color);
+        }
+      });
+      
       setOrders(data);
       
       // Check if customer has any active orders (with assigned driver)
       const activeOrder = data.find(order => 
         ["Assigned", "Accepted", "Arrived", "Picked-Up", "In-Transit"].includes(order.status)
       );
+      
+      if (activeOrder) {
+        console.log("\n🎯 DEBUG: Active order found:", activeOrder._id);
+        console.log("👤 DEBUG: Active order driver full object:", JSON.stringify(activeOrder.driver, null, 2));
+        console.log("🚗 DEBUG: Active order vehicle full object:", JSON.stringify(activeOrder.vehicle, null, 2));
+      } else {
+        console.log("⚠️ DEBUG: No active orders found");
+      }
+      
       setHasActiveOrder(!!activeOrder);
     } catch (err) {
-      console.error("Error fetching orders:", err);
+      console.error("❌ DEBUG: Error fetching orders:", err);
+      console.error("❌ DEBUG: Error details:", err.response?.data);
     }
   };
 
@@ -964,74 +1007,94 @@ const CustomerDashboard = () => {
                   </div>
 
                   {selectedOrder.driver && (
-                    <div className="tracking-card">
-                      <h4>👤 Driver Information</h4>
-                      <div className="driver-info-v2">
-                        <div className="driver-avatar-large">
-                          {selectedOrder.driver.name.charAt(0).toUpperCase()}
+                    <div className="tracking-card driver-info-card">
+                      {/* <h4>👤 Driver Information</h4> */}
+
+                      <div className="driver-info-modern">
+                        <div className="driver-avatar-section">
+                          <div className="driver-avatar-large">
+                            {selectedOrder.driver.name.charAt(0).toUpperCase()}
+                          </div>
                         </div>
-                        <div className="driver-details-v2">
-                          <p className="driver-name">{selectedOrder.driver.name}</p>
-                          
-                          {/* Phone with call button */}
-                          <div className="driver-contact">
-                            <p className="driver-phone">
-                              📱 {selectedOrder.driver.phone || selectedOrder.driver.phoneNumber || "N/A"}
+
+                        <div className="driver-content-section">
+                          <div className="driver-header-info">
+                            <h3 className="driver-name-modern">{selectedOrder.driver.name}</h3>
+                            <p className="driver-email-modern">
+                              <span className="driver-email-icon">📧</span>
+                              {selectedOrder.driver.email || "Email not provided"}
                             </p>
-                            {(selectedOrder.driver.phone || selectedOrder.driver.phoneNumber) && (
-                              <a 
-                                href={`tel:${selectedOrder.driver.phone || selectedOrder.driver.phoneNumber}`}
-                                className="call-driver-btn"
-                                title="Call Driver"
-                              >
-                                📞 Call
-                              </a>
-                            )}
+                          </div>
+
+                          <div className="driver-actions-modern">
+                            {/* Call Driver Button */}
+                            {(() => {
+                              const driverPhone = selectedOrder.driver.phone || selectedOrder.driver.phoneNumber;
+                              const canCallDriver = Boolean(driverPhone);
+
+                              return (
+                                <button
+                                  type="button"
+                                  className="call-driver-btn-modern"
+                                  disabled={!canCallDriver}
+                                  onClick={() => {
+                                    if (canCallDriver) {
+                                      window.location.href = `tel:${driverPhone}`;
+                                    }
+                                  }}
+                                >
+                                  <span className="call-driver-icon" aria-hidden="true">📞</span>
+                                  <span className="call-driver-text">
+                                    <span className="call-driver-label">Call Driver</span>
+                                  </span>
+                                </button>
+                              );
+                            })()}
+
+                            {/* Vehicle Details */}
+                            {(() => {
+                              const vehicle = selectedOrder.vehicle;
+
+                              if (!vehicle) {
+                                return (
+                                  <div className="vehicle-details-modern no-vehicle">
+                                    <span className="vehicle-icon">🚗</span>
+                                    <span className="vehicle-text">Vehicle info pending</span>
+                                  </div>
+                                );
+                              }
+
+                              return (
+                                <div className="vehicle-details-modern">
+                                  <span className="vehicle-icon">🚗</span>
+                                  <div className="vehicle-info-content">
+                                    <span className="vehicle-type">{vehicle.type || "Vehicle"}</span>
+                                    {vehicle.plateNumber && (
+                                      <span className="vehicle-plate">{vehicle.plateNumber}</span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })()}
                           </div>
 
                           {/* Driver Rating */}
-                          {selectedOrder.driver.stats && (
-                            <div className="driver-rating-display">
-                              <span className="rating-label">Rating:</span>
-                              <span className="rating-stars">
+                          {selectedOrder.driver.stats && selectedOrder.driver.stats.averageRating > 0 && (
+                            <div className="driver-rating-modern">
+                              <div className="rating-stars-modern">
                                 {[...Array(5)].map((_, i) => (
                                   <span key={i} className={i < Math.round(selectedOrder.driver.stats.averageRating || 0) ? 'star-filled' : 'star-empty'}>
                                     ⭐
                                   </span>
                                 ))}
-                              </span>
-                              <span className="rating-value">
+                              </div>
+                              <span className="rating-value-modern">
                                 {(selectedOrder.driver.stats.averageRating || 0).toFixed(1)}/5
                               </span>
-                              {selectedOrder.driver.stats.totalRatings && (
-                                <span className="rating-count">
-                                  ({selectedOrder.driver.stats.totalRatings} ratings)
+                              {selectedOrder.driver.stats.totalRatings > 0 && (
+                                <span className="rating-count-modern">
+                                  ({selectedOrder.driver.stats.totalRatings})
                                 </span>
-                              )}
-                            </div>
-                          )}
-                          
-                          {/* Vehicle Details */}
-                          {selectedOrder.vehicle && (
-                            <div className="vehicle-details-display">
-                              <p className="vehicle-info">
-                                <span className="vehicle-icon">🚗</span>
-                                <strong>{selectedOrder.vehicle.type}</strong>
-                              </p>
-                              <p className="vehicle-plate">
-                                <span className="plate-icon">🔢</span>
-                                {selectedOrder.vehicle.plateNumber}
-                              </p>
-                              {selectedOrder.vehicle.model && (
-                                <p className="vehicle-model">
-                                  {selectedOrder.vehicle.model} {selectedOrder.vehicle.year && `(${selectedOrder.vehicle.year})`}
-                                </p>
-                              )}
-                              {selectedOrder.vehicle.color && (
-                                <p className="vehicle-color">
-                                  <span className="color-icon">🎨</span>
-                                  {selectedOrder.vehicle.color}
-                                </p>
                               )}
                             </div>
                           )}

@@ -242,11 +242,115 @@ const getOrders = asyncHandler(async (req, res) => {
       .populate("vehicle");
   } else {
     // Customer
-    orders = await Order.find({ customer: req.user._id })
-      .populate("driver", "name email")
-      .populate("vehicle");
+    console.log("🔍 BACKEND DEBUG: Fetching customer orders with enriched driver/vehicle details");
+
+    const customerOrders = await Order.find({ customer: req.user._id })
+      .populate({
+        path: "driver",
+        select: "name email phone driverDetails vehicleAssigned stats"
+      })
+      .populate({
+        path: "vehicle",
+        select: "type plateNumber model year color capacity"
+      });
+    
+    console.log("🔍 BACKEND DEBUG: Raw populated orders with ALL fields:", JSON.stringify(customerOrders, null, 2));
+
+    console.log("🔍 BACKEND DEBUG: Customer orders count:", customerOrders.length);
+
+    customerOrders.forEach((order, index) => {
+      console.log(`   Order ${index + 1}: status=${order.status}`);
+      console.log("   ├─ Driver:", order.driver);
+      console.log("   ├─ Driver phone:", order.driver?.phone);
+      console.log("   ├─ Driver vehicleAssigned:", order.driver?.vehicleAssigned);
+      console.log("   └─ Vehicle:", order.vehicle);
+      console.log("   └─ Vehicle plateNumber:", order.vehicle?.plateNumber);
+    });
+
+    // Collect vehicle IDs that still need to be resolved (driver assigned but order missing vehicle doc)
+    const fallbackVehicleIds = new Set();
+
+    customerOrders.forEach((order) => {
+      const driverVehicleId = order?.driver?.vehicleAssigned;
+      if (!order.vehicle && driverVehicleId) {
+        fallbackVehicleIds.add(driverVehicleId.toString());
+      }
+    });
+
+    if (fallbackVehicleIds.size > 0) {
+      const fallbackVehicles = await Vehicle.find({
+        _id: { $in: Array.from(fallbackVehicleIds) },
+      })
+        .select("type plateNumber model year color")
+        .lean();
+
+      const fallbackMap = new Map(
+        fallbackVehicles.map((vehicle) => [vehicle._id.toString(), vehicle])
+      );
+
+      customerOrders.forEach((order) => {
+        if (!order.vehicle && order?.driver?.vehicleAssigned) {
+          const assignedId = order.driver.vehicleAssigned.toString();
+          if (fallbackMap.has(assignedId)) {
+            order.vehicle = fallbackMap.get(assignedId);
+            console.log(
+              `🚗 BACKEND DEBUG: Filled missing vehicle for order ${order._id} using driver's assigned vehicle`
+            );
+          }
+        }
+      });
+    }
+
+    // Convert to plain objects and enrich driver data
+    const enrichedOrders = customerOrders.map(order => {
+      const orderObj = order.toObject ? order.toObject() : order;
+      
+      if (orderObj.driver) {
+        console.log(`\n🔍 ENRICHING Order ${orderObj._id}:`);
+        console.log(`   Driver phone before: ${orderObj.driver.phone}`);
+        
+        // If no phone at root level, log warning
+        if (!orderObj.driver.phone) {
+          console.log(`⚠️ BACKEND DEBUG: No phone found for driver ${orderObj.driver.name}`);
+        }
+        
+        // If still no vehicle, create one from driverDetails
+        if (!orderObj.vehicle && orderObj.driver.driverDetails) {
+          const dd = orderObj.driver.driverDetails;
+          if (dd.vehicleType || dd.vehicleNumber) {
+            orderObj.vehicle = {
+              type: dd.vehicleType || "Unknown",
+              plateNumber: dd.vehicleNumber || "N/A",
+              model: dd.vehicleModel || null,
+              year: dd.vehicleYear || null,
+              color: null
+            };
+            console.log(
+              `🚗 BACKEND DEBUG: Created vehicle from driverDetails for order ${orderObj._id}`
+            );
+          }
+        }
+      }
+      
+      return orderObj;
+    });
+
+    orders = enrichedOrders;
   }
 
+  console.log("📤 BACKEND DEBUG: Sending orders to frontend");
+  console.log("📤 BACKEND DEBUG: Final orders being sent:");
+  orders.forEach((order, idx) => {
+    if (order.driver) {
+      console.log(`   Order ${idx + 1}:`);
+      console.log(`      Driver ID: ${order.driver._id}`);
+      console.log(`      Driver Name: ${order.driver.name}`);
+      console.log(`      Driver Phone: ${order.driver.phone}`);
+      console.log(`      Driver Email: ${order.driver.email}`);
+      console.log(`      Vehicle: ${order.vehicle ? order.vehicle.plateNumber : 'NULL'}`);
+    }
+  });
+  
   res.json(orders);
 });
 
@@ -364,10 +468,14 @@ const acceptOrder = asyncHandler(async (req, res) => {
 
   console.log("✅ All checks passed, accepting order...");
 
-  // Assign driver to order
+  // Assign driver and vehicle to order
   order.driver = req.user._id;
+  order.vehicle = driver.vehicleAssigned; // Assign driver's vehicle
   order.status = "Accepted";
   order.acceptedAt = new Date();
+  
+  console.log("✅ Assigned driver:", order.driver);
+  console.log("✅ Assigned vehicle:", order.vehicle);
 
   await order.save();
 
@@ -629,9 +737,15 @@ const confirmCashPayment = asyncHandler(async (req, res) => {
 // @access  Customer/Admin/Driver
 const trackOrder = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id)
-    .populate("driver", "name email")
-    .populate("vehicle", "plateNumber type")
+    .populate("driver", "name email phone stats")
+    .populate("vehicle", "type plateNumber model year color")
     .populate("customer", "name email");
+
+  console.log("🔍 BACKEND DEBUG: Order found:", order._id);
+  console.log("👤 BACKEND DEBUG: Driver populated:", order.driver);
+  console.log("🚗 BACKEND DEBUG: Vehicle populated:", order.vehicle);
+  console.log("📱 BACKEND DEBUG: Driver phone:", order.driver?.phone);
+  console.log("🔢 BACKEND DEBUG: Vehicle plate:", order.vehicle?.plateNumber);
 
   if (!order) {
     res.status(404);

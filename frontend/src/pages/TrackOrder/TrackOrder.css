@@ -175,6 +175,26 @@
   font-size: 14px;
 }
 
+.driver-phone {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px !important;
+}
+
+.vehicle-info {
+  margin-top: 10px;
+  padding: 10px;
+  background: #f0f9ff;
+  border-radius: 8px;
+  border-left: 4px solid #3b82f6;
+}
+
+.vehicle-info p {
+  margin: 4px 0 !important;
+  font-size: 13px !important;
+  color: #1e40af !important;
+}
+
 .call-driver-btn {
   background: #4CAF50;
   color: white;
