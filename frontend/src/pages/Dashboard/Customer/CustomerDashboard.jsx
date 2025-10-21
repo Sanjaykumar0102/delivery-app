@@ -23,7 +23,7 @@ const CustomerDashboard = () => {
   const [vehicleType, setVehicleType] = useState("");
   const [pickup, setPickup] = useState({ address: "", lat: null, lng: null });
   const [dropoff, setDropoff] = useState({ address: "", lat: null, lng: null });
-  const [items, setItems] = useState([{ name: "", quantity: 1, weight: 0 }]);
+  const [items, setItems] = useState([{ name: "", quantity: 1 }]);
   const [packageDetails, setPackageDetails] = useState({
     totalWeight: 0,
     dimensions: { length: 0, width: 0, height: 0 },
@@ -376,7 +376,7 @@ const CustomerDashboard = () => {
   };
 
   const addItem = () => {
-    setItems([...items, { name: "", quantity: 1, weight: 0 }]);
+    setItems([...items, { name: "", quantity: 1 }]);
   };
 
   const removeItem = (index) => {
@@ -699,21 +699,11 @@ const CustomerDashboard = () => {
                       type="number"
                       value={item.quantity}
                       min="1"
-                      placeholder="Qty"
+                      placeholder="Quantity"
                       onChange={(e) =>
                         handleItemChange(index, "quantity", parseInt(e.target.value))
                       }
                       required
-                    />
-                    <input
-                      type="number"
-                      value={item.weight}
-                      min="0"
-                      step="0.1"
-                      placeholder="Weight (kg)"
-                      onChange={(e) =>
-                        handleItemChange(index, "weight", parseFloat(e.target.value))
-                      }
                     />
                     {items.length > 1 && (
                       <button

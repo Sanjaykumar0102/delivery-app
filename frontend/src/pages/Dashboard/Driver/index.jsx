@@ -55,6 +55,12 @@ const DriverDashboard = () => {
   const [showNotification, setShowNotification] = useState(false);
   const [notification, setNotification] = useState(null);
 
+  // Delivery completion state
+  const [showDeliveryCompletion, setShowDeliveryCompletion] = useState(false);
+  const [completingOrder, setCompletingOrder] = useState(null);
+  const [deliveryStep, setDeliveryStep] = useState('payment'); // 'payment', 'receipt'
+  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
+
   // Initialize user and socket
   useEffect(() => {
     const userCookie = Cookies.get("user");
@@ -625,14 +631,21 @@ const DriverDashboard = () => {
   const handleUpdateStatus = async (orderId, newStatus) => {
     try {
       console.log(`📦 Updating order ${orderId} to status: ${newStatus}`);
-      console.log("📋 Current order before update:", currentOrder);
+
+      // If marking as delivered, show completion interface instead of immediate update
+      if (newStatus === "Delivered") {
+        setCompletingOrder(currentOrder);
+        setShowDeliveryCompletion(true);
+        setDeliveryStep('payment');
+        setPaymentConfirmed(false);
+        return; // Don't update status yet, wait for completion flow
+      }
 
       const response = await axios.put(`/orders/${orderId}/status`, { status: newStatus });
       console.log("✅ Status update response:", response.data);
 
       // Immediately update the current order status optimistically
       if (currentOrder && currentOrder._id === orderId) {
-        console.log("🔄 Optimistically updating current order status");
         setCurrentOrder(prev => ({
           ...prev,
           status: newStatus
@@ -640,26 +653,7 @@ const DriverDashboard = () => {
       }
 
       // Refresh orders immediately
-      console.log("🔄 Fetching updated orders...");
       await fetchMyOrders();
-
-      // Wait a bit for state to update
-      setTimeout(() => {
-        console.log("📋 Current order after fetch (delayed check):", currentOrder);
-      }, 100);
-
-      // If delivered, refresh earnings and clear current order
-      if (newStatus === "Delivered") {
-        console.log("💰 Order delivered, refreshing earnings...");
-        await fetchDriverProfile();
-
-        // Clear current order since it's no longer active
-        console.log("🧹 Clearing current order after delivery");
-        setCurrentOrder(null);
-        setUseWorkflowUI(false);
-        setShowCurrentOrderTab(false); // Hide current order tab
-        setActiveTab("home"); // Navigate back to home
-      }
 
       // Emit status update via socket
       if (socket) {
@@ -670,15 +664,8 @@ const DriverDashboard = () => {
       alert(`✅ Order status updated to ${newStatus}`);
     } catch (error) {
       console.error("❌ Error updating status:", error);
-      console.error("❌ Error details:", error.response?.data);
-
-      // Revert optimistic update if there was an error
-      if (currentOrder && currentOrder._id === orderId) {
-        console.log("🔄 Reverting optimistic update due to error");
-        await fetchMyOrders(); // Refresh to get correct state
-      }
-
-      alert("❌ Failed to update order status: " + (error.response?.data?.message || error.message));
+      const errorMessage = error.response?.data?.message || error.message || "Failed to update status";
+      alert(`❌ ${errorMessage}`);
     }
   };
 
@@ -1564,6 +1551,18 @@ const DriverDashboard = () => {
                         <div className="rating-header">
                           <span className="rating-icon">⭐</span>
                           <span className="rating-title">Customer Rating</span>
+                          {order.customerRating?.review && (
+                            <button 
+                              className="feedback-toggle-btn"
+                              onClick={() => {
+                                const feedbackEl = document.getElementById(`feedback-${order._id}`);
+                                const isHidden = feedbackEl.style.display === 'none';
+                                feedbackEl.style.display = isHidden ? 'block' : 'none';
+                              }}
+                            >
+                              💬 View Feedback
+                            </button>
+                          )}
                         </div>
                         <div className="rating-stars">
                           {[1, 2, 3, 4, 5].map((star) => (
@@ -1577,9 +1576,14 @@ const DriverDashboard = () => {
                           <span className="rating-value">({order.customerRating?.rating || 0}/5)</span>
                         </div>
                         {order.customerRating?.review && (
-                          <div className="customer-feedback">
-                            <p className="feedback-label">💬 Feedback:</p>
+                          <div id={`feedback-${order._id}`} className="customer-feedback" style={{display: 'none'}}>
+                            <p className="feedback-label">💬 Customer Feedback:</p>
                             <p className="feedback-text">"{order.customerRating.review}"</p>
+                          </div>
+                        )}
+                        {!order.customerRating?.review && (
+                          <div className="no-feedback">
+                            <p>No written feedback provided</p>
                           </div>
                         )}
                       </div>
@@ -1748,6 +1752,147 @@ const DriverDashboard = () => {
           <MyProfile user={user} onUpdate={(updatedUser) => setUser(updatedUser)} />
         )}
       </main>
+
+      {/* Delivery Completion Interface */}
+      {showDeliveryCompletion && completingOrder && (
+        <div className="delivery-completion-overlay">
+          <div className="delivery-completion-modal">
+            {deliveryStep === 'payment' && (
+              <div className="completion-step payment-step">
+                <div className="step-header">
+                  <h2>💳 Payment Confirmation</h2>
+                  <p>Confirm payment collection from customer</p>
+                </div>
+                
+                <div className="order-summary">
+                  <div className="summary-row">
+                    <span>Order ID:</span>
+                    <span>#{completingOrder._id.slice(-6)}</span>
+                  </div>
+                  <div className="summary-row">
+                    <span>Total Fare:</span>
+                    <span className="fare-amount">₹{completingOrder.fare}</span>
+                  </div>
+                  <div className="summary-row">
+                    <span>Payment Method:</span>
+                    <span>{completingOrder.paymentMethod}</span>
+                  </div>
+                </div>
+
+                <div className="payment-actions">
+                  <button
+                    className="confirm-payment-btn"
+                    onClick={() => {
+                      setPaymentConfirmed(true);
+                      setDeliveryStep('receipt');
+                    }}
+                  >
+                    ✅ Payment Collected
+                  </button>
+                  <button
+                    className="cancel-completion-btn"
+                    onClick={() => {
+                      setShowDeliveryCompletion(false);
+                      setCompletingOrder(null);
+                      setDeliveryStep('payment');
+                      setPaymentConfirmed(false);
+                    }}
+                  >
+                    ❌ Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {deliveryStep === 'receipt' && (
+              <div className="completion-step receipt-step">
+                <div className="step-header">
+                  <h2>🧾 Delivery Receipt</h2>
+                  <p>Order completed successfully!</p>
+                </div>
+
+                <div className="receipt-content">
+                  <div className="receipt-header">
+                    <h3>DelivraX Receipt</h3>
+                    <p>Order #{completingOrder._id.slice(-6)}</p>
+                    <p>{new Date().toLocaleString()}</p>
+                  </div>
+
+                  <div className="receipt-details">
+                    <div className="detail-section">
+                      <h4>📍 Route</h4>
+                      <p><strong>From:</strong> {completingOrder.pickup?.address}</p>
+                      <p><strong>To:</strong> {completingOrder.dropoff?.address}</p>
+                    </div>
+
+                    <div className="detail-section">
+                      <h4>📦 Items</h4>
+                      {completingOrder.items?.map((item, index) => (
+                        <p key={index}>{item.name} (Qty: {item.quantity})</p>
+                      ))}
+                    </div>
+
+                    <div className="detail-section">
+                      <h4>💰 Payment</h4>
+                      <p><strong>Fare:</strong> ₹{completingOrder.fare}</p>
+                      <p><strong>Method:</strong> {completingOrder.paymentMethod}</p>
+                      <p><strong>Status:</strong> ✅ Paid</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="receipt-actions">
+                  <button
+                    className="complete-delivery-btn"
+                    onClick={async () => {
+                      try {
+                        // Now actually update the order status to Delivered
+                        const response = await axios.put(`/orders/${completingOrder._id}/status`, { 
+                          status: 'Delivered' 
+                        });
+
+                        // Refresh earnings and clear current order
+                        await fetchDriverProfile();
+                        setCurrentOrder(null);
+                        setUseWorkflowUI(false);
+                        setShowCurrentOrderTab(false);
+                        setActiveTab("home");
+
+                        // Emit status update via socket
+                        if (socket) {
+                          socket.emit("orderStatusUpdate", { 
+                            orderId: completingOrder._id, 
+                            status: 'Delivered' 
+                          });
+                        }
+
+                        // Close completion interface
+                        setShowDeliveryCompletion(false);
+                        setCompletingOrder(null);
+                        setDeliveryStep('payment');
+                        setPaymentConfirmed(false);
+
+                        alert("🎉 Delivery completed successfully! Great job!");
+                      } catch (error) {
+                        console.error("❌ Error completing delivery:", error);
+                        alert("❌ Error completing delivery. Please try again.");
+                      }
+                    }}
+                  >
+                    🎉 Complete Delivery
+                  </button>
+                  <button
+                    className="edit-receipt-btn"
+                    onClick={() => setDeliveryStep('payment')}
+                  >
+                    ✏️ Edit
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
