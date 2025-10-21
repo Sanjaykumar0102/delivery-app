@@ -8,6 +8,7 @@ export default function Register() {
     name: "",
     email: "",
     password: "",
+    phone: "",
     role: "Customer",
     adminCode: "",
   });
@@ -56,6 +57,12 @@ export default function Register() {
     // Validation
     if (formData.password.length < 6) {
       setError("Password must be at least 6 characters long");
+      setLoading(false);
+      return;
+    }
+
+    if (!formData.phone || formData.phone.length < 10) {
+      setError("Please enter a valid 10-digit mobile number");
       setLoading(false);
       return;
     }
@@ -234,6 +241,25 @@ export default function Register() {
                   />
                 </div>
                 <small className="input-hint">Minimum 6 characters</small>
+              </div>
+
+              <div className="input-group">
+                <label htmlFor="phone">Mobile Number</label>
+                <div className={`input-wrapper ${getInputClass('phone')}`}>
+                  <span className="input-icon">📱</span>
+                  <input
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    placeholder="Enter your mobile number"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    onFocus={() => handleFocus('phone')}
+                    onBlur={() => handleBlur('phone')}
+                    required
+                  />
+                </div>
+                <small className="input-hint">10-digit mobile number</small>
               </div>
 
               <div className="input-group">

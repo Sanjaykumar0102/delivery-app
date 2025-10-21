@@ -12,6 +12,7 @@ const vehicleRoutes = require("./routes/vehicleRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const reportRoutes = require("./routes/reportRoutes");
 const metricsRoutes = require("./routes/metricsRoutes");
+const statsRoutes = require("./routes/statsRoutes");
 const { serializeConnectedDrivers } = require("./utils/driverMetrics");
 const Order = require("./models/order"); // needed for tracking updates
 const User = require("./models/user"); // needed for driver queries
@@ -52,6 +53,7 @@ app.use("/api/vehicles", vehicleRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/metrics", metricsRoutes);
+app.use("/api/stats", statsRoutes);
 
 // Simple test route
 app.get("/", (req, res) => {

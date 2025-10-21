@@ -4,6 +4,7 @@ import { io } from "socket.io-client";
 import { logout } from "../../../services/authService";
 import Cookies from "js-cookie";
 import { getDashboardStats, assignOrderToDriver, getPendingDrivers, approveDriver, rejectDriver, getAllCustomers, getAllAdmins, toggleUserActive } from "../../../services/adminService";
+import { getStatsOverview, getOrdersTimeline, getRevenueAnalytics } from "../../../services/statsService";
 import "./AdminDashboard.css";
 import "./DriverCardModern.css";
 
@@ -45,6 +46,13 @@ const AdminDashboard = () => {
   // Revenue modal
   const [showRevenueModal, setShowRevenueModal] = useState(false);
   const [liveDriverMetrics, setLiveDriverMetrics] = useState(null);
+
+  // Stats tab data
+  const [statsData, setStatsData] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsPeriod, setStatsPeriod] = useState("month");
+  const [ordersTimeline, setOrdersTimeline] = useState(null);
+  const [revenueData, setRevenueData] = useState(null);
 
   // Initialize user and socket
   useEffect(() => {
@@ -224,6 +232,27 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchStatsData = async () => {
+    setStatsLoading(true);
+    try {
+      const [overview, timeline, revenue] = await Promise.all([
+        getStatsOverview(statsPeriod),
+        getOrdersTimeline(statsPeriod),
+        getRevenueAnalytics(statsPeriod)
+      ]);
+      
+      setStatsData(overview);
+      setOrdersTimeline(timeline);
+      setRevenueData(revenue);
+      console.log("✅ Stats data loaded successfully");
+    } catch (err) {
+      console.error("❌ Error fetching stats:", err);
+      setError("Failed to load statistics");
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
   // Fetch data when tabs are active
   useEffect(() => {
     if (activeTab === "approvals" && user) {
@@ -232,8 +261,17 @@ const AdminDashboard = () => {
       fetchCustomers();
     } else if (activeTab === "admins" && user) {
       fetchAdmins();
+    } else if (activeTab === "stats" && user) {
+      fetchStatsData();
     }
   }, [activeTab, user]);
+
+  // Fetch stats data when period changes
+  useEffect(() => {
+    if (activeTab === "stats" && user) {
+      fetchStatsData();
+    }
+  }, [statsPeriod]);
 
   const handleApproveDriver = async (driverId) => {
     try {
@@ -639,6 +677,12 @@ const AdminDashboard = () => {
           onClick={() => setActiveTab("admins")}
         >
           🛡️ Admins ({stats?.totalAdmins || 0})
+        </button>
+        <button
+          className={activeTab === "stats" ? "nav-btn active" : "nav-btn"}
+          onClick={() => setActiveTab("stats")}
+        >
+          📊 Statistics
         </button>
       </nav>
 
@@ -1271,6 +1315,210 @@ const AdminDashboard = () => {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Stats Tab */}
+        {activeTab === "stats" && (
+          <div className="stats-section">
+            <div className="section-header">
+              <h2>📊 Statistics & Analytics</h2>
+              <div className="period-selector">
+                <select 
+                  value={statsPeriod} 
+                  onChange={(e) => setStatsPeriod(e.target.value)}
+                  className="period-select"
+                >
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
+                  <option value="year">This Year</option>
+                  <option value="all">All Time</option>
+                </select>
+              </div>
+            </div>
+
+            {statsLoading ? (
+              <div className="loading-container">
+                <div className="spinner"></div>
+                <p>Loading statistics...</p>
+              </div>
+            ) : statsData ? (
+              <>
+                {/* Overview Cards */}
+                <div className="stats-overview">
+                  <div className="stats-card">
+                    <div className="stats-icon">📦</div>
+                    <div className="stats-info">
+                      <h3>Total Orders</h3>
+                      <div className="stats-number">{statsData.orders.total}</div>
+                      <div className="stats-meta">
+                        <span className="completion-rate">
+                          {statsData.orders.completionRate}% completion rate
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="stats-card">
+                    <div className="stats-icon">✅</div>
+                    <div className="stats-info">
+                      <h3>Completed Orders</h3>
+                      <div className="stats-number">{statsData.orders.completed}</div>
+                      <div className="stats-meta">
+                        <span className="success-rate">
+                          {statsData.orders.total > 0 ? ((statsData.orders.completed / statsData.orders.total) * 100).toFixed(1) : 0}% of total
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="stats-card">
+                    <div className="stats-icon">💰</div>
+                    <div className="stats-info">
+                      <h3>Total Revenue</h3>
+                      <div className="stats-number">₹{statsData.revenue.total.toLocaleString()}</div>
+                      <div className="stats-meta">
+                        <span className="platform-fee">
+                          Platform: ₹{statsData.revenue.platform.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="stats-card">
+                    <div className="stats-icon">🚗</div>
+                    <div className="stats-info">
+                      <h3>Active Drivers</h3>
+                      <div className="stats-number">{statsData.users.activeDrivers}</div>
+                      <div className="stats-meta">
+                        <span className="total-drivers">
+                          of {statsData.users.drivers} total drivers
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Charts Section */}
+                <div className="charts-section">
+                  <div className="chart-container">
+                    <h3>📈 Orders Timeline</h3>
+                    {ordersTimeline && ordersTimeline.data.length > 0 ? (
+                      <div className="simple-chart">
+                        <div className="chart-bars">
+                          {ordersTimeline.data.map((item, index) => {
+                            const maxOrders = Math.max(...ordersTimeline.data.map(d => d.totalOrders));
+                            const height = maxOrders > 0 ? (item.totalOrders / maxOrders) * 100 : 0;
+                            return (
+                              <div key={index} className="chart-bar-container">
+                                <div 
+                                  className="chart-bar" 
+                                  style={{ height: `${height}%` }}
+                                  title={`${item.totalOrders} orders`}
+                                ></div>
+                                <div className="chart-label">
+                                  {ordersTimeline.dateFormat === 'month' ? `Month ${item._id}` : 
+                                   ordersTimeline.dateFormat === 'day' ? `Day ${item._id}` : item._id}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="no-data">No data available for this period</div>
+                    )}
+                  </div>
+
+                  <div className="chart-container">
+                    <h3>💰 Revenue Analytics</h3>
+                    {revenueData && revenueData.data.length > 0 ? (
+                      <div className="revenue-chart">
+                        <div className="revenue-summary">
+                          <div className="revenue-item">
+                            <span className="revenue-label">Total Revenue:</span>
+                            <span className="revenue-value">₹{revenueData.data.reduce((sum, item) => sum + item.totalRevenue, 0).toLocaleString()}</span>
+                          </div>
+                          <div className="revenue-item">
+                            <span className="revenue-label">Platform Fees:</span>
+                            <span className="revenue-value">₹{revenueData.data.reduce((sum, item) => sum + item.platformFee, 0).toLocaleString()}</span>
+                          </div>
+                          <div className="revenue-item">
+                            <span className="revenue-label">Driver Earnings:</span>
+                            <span className="revenue-value">₹{revenueData.data.reduce((sum, item) => sum + item.driverEarnings, 0).toLocaleString()}</span>
+                          </div>
+                        </div>
+                        <div className="simple-chart">
+                          <div className="chart-bars">
+                            {revenueData.data.map((item, index) => {
+                              const maxRevenue = Math.max(...revenueData.data.map(d => d.totalRevenue));
+                              const height = maxRevenue > 0 ? (item.totalRevenue / maxRevenue) * 100 : 0;
+                              return (
+                                <div key={index} className="chart-bar-container">
+                                  <div 
+                                    className="chart-bar revenue-bar" 
+                                    style={{ height: `${height}%` }}
+                                    title={`₹${item.totalRevenue.toLocaleString()}`}
+                                  ></div>
+                                  <div className="chart-label">
+                                    {item._id.day}/{item._id.month}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="no-data">No revenue data available for this period</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Detailed Stats */}
+                <div className="detailed-stats">
+                  <div className="stats-row">
+                    <div className="stat-item">
+                      <h4>Order Status Breakdown</h4>
+                      <div className="status-breakdown">
+                        <div className="status-item">
+                          <span className="status-label">Completed:</span>
+                          <span className="status-value">{statsData.orders.completed}</span>
+                        </div>
+                        <div className="status-item">
+                          <span className="status-label">Cancelled:</span>
+                          <span className="status-value">{statsData.orders.cancelled}</span>
+                        </div>
+                        <div className="status-item">
+                          <span className="status-label">Pending:</span>
+                          <span className="status-value">{statsData.orders.pending}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="stat-item">
+                      <h4>User Statistics</h4>
+                      <div className="user-breakdown">
+                        <div className="user-item">
+                          <span className="user-label">Total Customers:</span>
+                          <span className="user-value">{statsData.users.customers}</span>
+                        </div>
+                        <div className="user-item">
+                          <span className="user-label">Total Drivers:</span>
+                          <span className="user-value">{statsData.users.drivers}</span>
+                        </div>
+                        <div className="user-item">
+                          <span className="user-label">Active Drivers:</span>
+                          <span className="user-value">{statsData.users.activeDrivers}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="no-data">Failed to load statistics</div>
+            )}
           </div>
         )}
 
