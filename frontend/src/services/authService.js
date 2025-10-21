@@ -46,6 +46,40 @@ export const login = async (userData) => {
   return { ...res.data, user };
 };
 
+// Get current user profile
+export const getCurrentUser = async () => {
+  const res = await api.get("/users/profile");
+  return res.data;
+};
+
+// Refresh user data in cookies
+export const refreshUserData = async () => {
+  try {
+    const userData = await getCurrentUser();
+
+    const user = {
+      _id: userData._id,
+      name: userData.name,
+      email: userData.email,
+      role: userData.role,
+      isApproved: userData.isApproved,
+      approvalStatus: userData.approvalStatus,
+      isActive: userData.isActive,
+      deactivationReason: userData.deactivationReason,
+      isOnDuty: userData.isOnDuty,
+      driverDetails: userData.driverDetails,
+      earnings: userData.earnings,
+      stats: userData.stats
+    };
+
+    Cookies.set("user", JSON.stringify(user), { expires: 30 });
+    return user;
+  } catch (error) {
+    console.error("Error refreshing user data:", error);
+    throw error;
+  }
+};
+
 // Logout user
 export const logout = () => {
   Cookies.remove("token");

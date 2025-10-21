@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { createOrder, getOrders } from "../../../services/orderService";
-import { logout } from "../../../services/authService";
+import { logout, refreshUserData } from "../../../services/authService";
 import Cookies from "js-cookie";
 import axios from "../../../utils/axios";
 import { io } from "socket.io-client";
@@ -107,10 +107,16 @@ const CustomerDashboard = () => {
     };
   }, [navigate]);
 
-  // Fetch orders
+  // Refresh user data when profile tab is viewed
   useEffect(() => {
-    if (activeTab === "orders" || activeTab === "track") {
-      fetchOrders();
+    if (activeTab === "profile") {
+      refreshUserData()
+        .then((updatedUser) => {
+          setUser(updatedUser);
+        })
+        .catch((error) => {
+          console.error("Error refreshing user data on profile view:", error);
+        });
     }
   }, [activeTab]);
 
@@ -132,7 +138,7 @@ const CustomerDashboard = () => {
       };
 
       // Order status updates
-      const handleOrderStatusUpdate = (data) => {
+      const handleOrderStatusUpdate = async (data) => {
         // Update selected order if it matches
         if (selectedOrder && data.orderId === selectedOrder._id) {
           setSelectedOrder((prev) => ({
@@ -169,6 +175,16 @@ const CustomerDashboard = () => {
 
         // Refresh orders list
         fetchOrders();
+
+        // Refresh user data when order is completed (for stats update)
+        if (data.status === "Delivered") {
+          try {
+            const updatedUser = await refreshUserData();
+            setUser(updatedUser);
+          } catch (error) {
+            console.error("Error refreshing user data after delivery:", error);
+          }
+        }
       };
 
       socket.on("locationUpdate", handleLocationUpdate);
@@ -362,6 +378,14 @@ const CustomerDashboard = () => {
 
       const response = await createOrder(orderData);
       setSuccess("✅ Order placed successfully! Finding a driver for you...");
+
+      // Refresh user data to update stats (totalOrders should increase)
+      try {
+        const updatedUser = await refreshUserData();
+        setUser(updatedUser);
+      } catch (error) {
+        console.error("Error refreshing user data after placing order:", error);
+      }
       
       // Show searching driver overlay
       setSearchingForDriver(true);
@@ -451,13 +475,21 @@ const CustomerDashboard = () => {
 
       const data = await response.json();
       alert("✅ Rating submitted successfully!");
-      
+
       // Reset rating state
       setSelectedRating(0);
       setHoveredRating(0);
-      
+
       // Refresh orders to update the UI
       fetchOrders();
+
+      // Refresh user data to update stats
+      try {
+        const updatedUser = await refreshUserData();
+        setUser(updatedUser);
+      } catch (error) {
+        console.error("Error refreshing user data after rating:", error);
+      }
     } catch (error) {
       console.error("Error rating driver:", error);
       alert("❌ " + (error.message || "Failed to submit rating"));

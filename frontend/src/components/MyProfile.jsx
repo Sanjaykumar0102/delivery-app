@@ -202,24 +202,34 @@ const MyProfile = ({ user, onUpdate }) => {
               <h3>📊 Driver Stats</h3>
               <div className="stats-grid">
                 <div className="stat-card">
+                  <div className="stat-title">Total Deliveries</div>
                   <div className="stat-icon">🚚</div>
                   <div className="stat-value">{user?.stats?.totalDeliveries || 0}</div>
-                  <div className="stat-label">Total Deliveries</div>
+                  <div className="stat-label">Deliveries Completed</div>
+                  <div className="stat-description">Total successful deliveries made</div>
                 </div>
                 <div className="stat-card">
+                  <div className="stat-title">Average Rating</div>
                   <div className="stat-icon">⭐</div>
                   <div className="stat-value">{user?.stats?.averageRating?.toFixed(1) || "0.0"}</div>
-                  <div className="stat-label">Average Rating</div>
+                  <div className="stat-label">Customer Rating</div>
+                  <div className="stat-description">Average rating from customers</div>
                 </div>
                 <div className="stat-card">
+                  <div className="stat-title">Total Earnings</div>
                   <div className="stat-icon">💰</div>
-                  <div className="stat-value">₹{user?.earnings?.totalEarnings?.toFixed(2) || "0.00"}</div>
-                  <div className="stat-label">Total Earnings</div>
+                  <div className="stat-value currency-value">₹{user?.earnings?.totalEarnings?.toFixed(2) || "0.00"}</div>
+                  <div className="stat-label">Total Earned</div>
+                  <div className="stat-description">Money earned from deliveries</div>
                 </div>
                 <div className="stat-card">
+                  <div className="stat-title">Current Status</div>
                   <div className="stat-icon">{user?.isOnDuty ? "🟢" : "🔴"}</div>
-                  <div className="stat-value">{user?.isOnDuty ? "On Duty" : "Off Duty"}</div>
-                  <div className="stat-label">Current Status</div>
+                  <div className={`stat-value status-value ${user?.isOnDuty ? 'active-status' : 'inactive-status'}`}>
+                    {user?.isOnDuty ? "On Duty" : "Off Duty"}
+                  </div>
+                  <div className="stat-label">Duty Status</div>
+                  <div className="stat-description">{user?.isOnDuty ? "Currently available for deliveries" : "Currently not accepting orders"}</div>
                 </div>
               </div>
             </div>
@@ -246,24 +256,34 @@ const MyProfile = ({ user, onUpdate }) => {
             <h3>📊 Order Stats</h3>
             <div className="stats-grid">
               <div className="stat-card">
+                <div className="stat-title">Total Orders</div>
                 <div className="stat-icon">📦</div>
                 <div className="stat-value">{user?.stats?.totalOrders || 0}</div>
-                <div className="stat-label">Total Orders</div>
+                <div className="stat-label">Total Orders Placed</div>
+                <div className="stat-description">All orders you've created</div>
               </div>
               <div className="stat-card">
+                <div className="stat-title">Completed</div>
                 <div className="stat-icon">✅</div>
                 <div className="stat-value">{user?.stats?.completedOrders || 0}</div>
-                <div className="stat-label">Completed</div>
+                <div className="stat-label">Successfully Delivered</div>
+                <div className="stat-description">Orders completed successfully</div>
               </div>
               <div className="stat-card">
+                <div className="stat-title">Total Spent</div>
                 <div className="stat-icon">💰</div>
-                <div className="stat-value">₹{user?.stats?.totalSpent?.toFixed(2) || "0.00"}</div>
-                <div className="stat-label">Total Spent</div>
+                <div className="stat-value currency-value">₹{user?.stats?.totalSpent?.toFixed(2) || "0.00"}</div>
+                <div className="stat-label">Total Amount Spent</div>
+                <div className="stat-description">Money spent on deliveries</div>
               </div>
               <div className="stat-card">
+                <div className="stat-title">Account Status</div>
                 <div className="stat-icon">🎯</div>
-                <div className="stat-value">{user?.isActive ? "Active" : "Inactive"}</div>
+                <div className={`stat-value status-value ${user?.isActive ? 'active-status' : 'inactive-status'}`}>
+                  {user?.isActive ? "Active" : "Inactive"}
+                </div>
                 <div className="stat-label">Account Status</div>
+                <div className="stat-description">{user?.isActive ? "Account is active and can place orders" : "Account is inactive"}</div>
               </div>
             </div>
           </div>
