@@ -926,11 +926,11 @@ input:checked + .slider:before {
   padding: 1.25rem;
   margin-top: 1rem;
   animation: fadeIn 0.5s ease;
-  height: 180px;
+  min-height: 120px;
   display: flex;
   flex-direction: column;
   box-shadow: 0 4px 12px rgba(255, 215, 0, 0.2);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .rating-header {
@@ -1028,6 +1028,9 @@ input:checked + .slider:before {
   margin-top: 1rem;
   border-left: 4px solid #667eea;
   animation: slideDown 0.3s ease;
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .feedback-label {
@@ -1330,6 +1333,8 @@ input:checked + .slider:before {
   padding: 1.5rem;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
+  overflow: visible;
+  min-height: fit-content;
 }
 
 .order-card:hover {
@@ -1527,6 +1532,23 @@ input:checked + .slider:before {
 
   .notification-actions {
     flex-direction: column;
+  }
+
+  .customer-rating-section {
+    padding: 1rem;
+    min-height: 100px;
+  }
+
+  .rating-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .feedback-toggle-btn {
+    align-self: flex-end;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
   }
 }
 

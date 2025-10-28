@@ -280,7 +280,7 @@ This guide will help you complete the integration of the new features I've imple
   color: #555;
 }
 
-.deactivation-reason {
+.deactivation-reason {I 
   color: #d32f2f;
   font-weight: 500;
   margin-top: 8px;

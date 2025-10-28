@@ -1554,10 +1554,14 @@ const DriverDashboard = () => {
                           {order.customerRating?.review && (
                             <button 
                               className="feedback-toggle-btn"
-                              onClick={() => {
+                              onClick={(e) => {
+                                e.preventDefault();
                                 const feedbackEl = document.getElementById(`feedback-${order._id}`);
-                                const isHidden = feedbackEl.style.display === 'none';
-                                feedbackEl.style.display = isHidden ? 'block' : 'none';
+                                if (feedbackEl) {
+                                  const isHidden = feedbackEl.style.display === 'none' || !feedbackEl.style.display;
+                                  feedbackEl.style.display = isHidden ? 'block' : 'none';
+                                  e.target.textContent = isHidden ? '💬 Hide Feedback' : '💬 View Feedback';
+                                }
                               }}
                             >
                               💬 View Feedback
